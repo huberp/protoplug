@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="protoplug_fx\Source\GUI Classes">
       <UniqueIdentifier>{4AA0D0E7-D285-3113-D34E-8D44331EB1AD}</UniqueIdentifier>
