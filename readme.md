@@ -33,3 +33,17 @@ For example, on Ubuntu 16:
 	make CONFIG=Release
 
 Then, optionally run `sudo make install` or just copy the binaries from `protoplug-1.4.0/Bin/linux` to wherever you want them.
+
+This Fork
+---------
+
+**Background**
+I grabbed med this repo because it seems abandoned and there where no more releases for quite some time.
+And there are some things that slowely grow old
+- VS2017 is used, but we should see VS2019
+- JUCE is version 5.x, but we are on 6.x 
+- luajit is not up to date and there's a newer one which is faster
+
+**Plan**
+I have added a VS2019 vst3 build to the current setup.
+Later I will add a more current luajit, taken from https://github.com/luapower/luajit/tree/master/bin
