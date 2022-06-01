@@ -4,9 +4,9 @@
          ToolsVersion="16.0"
          xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|x64">
+    <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
+      <Platform>Win32</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release_64|x64">
       <Configuration>Release_64</Configuration>
@@ -17,7 +17,7 @@
     <ProjectGuid>{D02A160F-888A-CA44-B2F1-E6A466D71064}</ProjectGuid>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'"
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'"
                  Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
@@ -43,18 +43,18 @@
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
     <TargetExt>.vst3</TargetExt>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)$(Platform)\$(Configuration)\VST3\</OutDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(Platform)\$(Configuration)\VST3\</IntDir>
-    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">protoplug_fx</TargetName>
-    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(LibraryPath);$(SolutionDir)$(Platform)\$(Configuration)\Shared Code</LibraryPath>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">.\..\..\..\..\Bin\win32\VST3\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(Platform)\$(Configuration)\VST3\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Lua Protoplug Fx</TargetName>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</GenerateManifest>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(LibraryPath);.\..\..\..\..\Bin\win32\Shared Code</LibraryPath>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release_64|x64'">.\..\..\..\..\Bin\win64\VST3\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release_64|x64'">$(Platform)\$(Configuration)\VST3\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release_64|x64'">Lua Protoplug Fx (x64)</TargetName>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release_64|x64'">true</GenerateManifest>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release_64|x64'">$(LibraryPath);.\..\..\..\..\Bin\win64\Shared Code</LibraryPath>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <Midl>
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MkTypLibCompatible>true</MkTypLibCompatible>
@@ -72,7 +72,7 @@
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <AssemblerListingLocation>$(IntDir)\</AssemblerListingLocation>
       <ObjectFileName>$(IntDir)\</ObjectFileName>
-      <ProgramDataBaseFileName>$(IntDir)\protoplug_fx.pdb</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>$(IntDir)\Lua Protoplug Fx.pdb</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -82,21 +82,22 @@
       <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
     <Link>
-      <OutputFile>$(OutDir)\protoplug_fx.vst3</OutputFile>
+      <OutputFile>$(OutDir)\Lua Protoplug Fx.vst3</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <IgnoreSpecificDefaultLibraries>libcmt.lib; msvcrt.lib;;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <ProgramDatabaseFile>$(IntDir)\protoplug_fx.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>$(IntDir)\Lua Protoplug Fx.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
+      <TargetMachine>MachineX86</TargetMachine>
       <LargeAddressAware>true</LargeAddressAware>
-      <AdditionalDependencies>protoplug_fx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Lua Protoplug Fx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>$(IntDir)\protoplug_fx.bsc</OutputFile>
+      <OutputFile>$(IntDir)\Lua Protoplug Fx.bsc</OutputFile>
     </Bscmake>
     <Lib>
-      <AdditionalDependencies>protoplug_fx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Lua Protoplug Fx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release_64|x64'">
