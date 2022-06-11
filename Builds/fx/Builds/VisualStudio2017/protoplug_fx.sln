@@ -1,6 +1,5 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 15
+# Visual Studio 2017
 
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "protoplug_fx - VST3", "protoplug_fx_VST3.vcxproj", "{D02A160F-888A-CA44-B2F1-E6A466D71064}"
 	ProjectSection(ProjectDependencies) = postProject
