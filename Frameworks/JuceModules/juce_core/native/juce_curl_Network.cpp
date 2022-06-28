@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -46,6 +46,7 @@ struct CURLSymbols
         std::unique_ptr<CURLSymbols> symbols (new CURLSymbols);
 
        #if JUCE_LOAD_CURL_SYMBOLS_LAZILY
+        const ScopedLock sl (getLibcurlLock());
         #define JUCE_INIT_CURL_SYMBOL(name)  if (! symbols->loadSymbol (symbols->name, #name)) return nullptr;
        #else
         #define JUCE_INIT_CURL_SYMBOL(name)  symbols->name = ::name;
@@ -70,17 +71,27 @@ struct CURLSymbols
         return symbols;
     }
 
+    // liburl's curl_multi_init calls curl_global_init which is not thread safe
+    // so we need to get a lock during calls to curl_multi_init and curl_multi_cleanup
+    static CriticalSection& getLibcurlLock() noexcept
+    {
+        static CriticalSection cs;
+        return cs;
+    }
+
 private:
     CURLSymbols() = default;
 
    #if JUCE_LOAD_CURL_SYMBOLS_LAZILY
     static DynamicLibrary& getLibcurl()
     {
+        const ScopedLock sl (getLibcurlLock());
         static DynamicLibrary libcurl;
 
-        for (auto libName : { "libcurl.so", "libcurl.so.4", "libcurl.so.3" })
-            if (libcurl.open (libName))
-                break;
+        if (libcurl.getNativeHandle() == nullptr)
+            for (auto libName : { "libcurl.so", "libcurl.so.4", "libcurl.so.3" })
+                if (libcurl.open (libName))
+                    break;
 
         return libcurl;
     }
@@ -99,13 +110,19 @@ private:
 class WebInputStream::Pimpl
 {
 public:
-    Pimpl (WebInputStream& ownerStream, const URL& urlToCopy, bool shouldUsePost)
-        : owner (ownerStream), url (urlToCopy), isPost (shouldUsePost),
-          httpRequest (isPost ? "POST" : "GET")
+    Pimpl (WebInputStream& ownerStream, const URL& urlToCopy, bool addParametersToBody)
+        : owner (ownerStream),
+          url (urlToCopy),
+          addParametersToRequestBody (addParametersToBody),
+          hasBodyDataToSend (url.hasBodyDataToSend() || addParametersToRequestBody),
+          httpRequest (hasBodyDataToSend ? "POST" : "GET")
     {
         jassert (symbols); // Unable to load libcurl!
 
-        multi = symbols->curl_multi_init();
+        {
+            const ScopedLock sl (CURLSymbols::getLibcurlLock());
+            multi = symbols->curl_multi_init();
+        }
 
         if (multi != nullptr)
         {
@@ -127,7 +144,7 @@ public:
     //==============================================================================
     // Input Stream overrides
     bool isError() const                 { return curl == nullptr || lastError != CURLE_OK; }
-    bool isExhausted()                   { return (isError() || finished) && curlBuffer.getSize() == 0; }
+    bool isExhausted()                   { return (isError() || finished) && curlBuffer.isEmpty(); }
     int64 getPosition()                  { return streamPos; }
     int64 getTotalLength()               { return contentLength; }
 
@@ -175,6 +192,7 @@ public:
     void cleanup()
     {
         const ScopedLock lock (cleanupLock);
+        const ScopedLock sl (CURLSymbols::getLibcurlLock());
 
         if (curl != nullptr)
         {
@@ -205,7 +223,7 @@ public:
     //==============================================================================
     bool setOptions()
     {
-        auto address = url.toString (! isPost);
+        auto address = url.toString (! addParametersToRequestBody);
 
         curl_version_info_data* data = symbols->curl_version_info (CURLVERSION_NOW);
         jassert (data != nullptr);
@@ -213,8 +231,11 @@ public:
         if (! requestHeaders.endsWithChar ('\n'))
             requestHeaders << "\r\n";
 
-        if (isPost)
-            WebInputStream::createHeadersAndPostData (url, requestHeaders, headersAndPostData);
+        if (hasBodyDataToSend)
+            WebInputStream::createHeadersAndPostData (url,
+                                                      requestHeaders,
+                                                      headersAndPostData,
+                                                      addParametersToRequestBody);
 
         if (! requestHeaders.endsWithChar ('\n'))
             requestHeaders << "\r\n";
@@ -229,7 +250,7 @@ public:
             && symbols->curl_easy_setopt (curl, CURLOPT_USERAGENT, userAgent.toRawUTF8()) == CURLE_OK
             && symbols->curl_easy_setopt (curl, CURLOPT_FOLLOWLOCATION, (maxRedirects > 0 ? 1 : 0)) == CURLE_OK)
         {
-            if (isPost)
+            if (hasBodyDataToSend)
             {
                 if (symbols->curl_easy_setopt (curl, CURLOPT_READDATA, this) != CURLE_OK
                     || symbols->curl_easy_setopt (curl, CURLOPT_READFUNCTION, StaticCurlRead) != CURLE_OK)
@@ -241,7 +262,7 @@ public:
             }
 
             // handle special http request commands
-            bool hasSpecialRequestCmd = isPost ? (httpRequest != "POST") : (httpRequest != "GET");
+            const auto hasSpecialRequestCmd = hasBodyDataToSend ? (httpRequest != "POST") : (httpRequest != "GET");
 
             if (hasSpecialRequestCmd)
                 if (symbols->curl_easy_setopt (curl, CURLOPT_CUSTOMREQUEST, httpRequest.toRawUTF8()) != CURLE_OK)
@@ -308,14 +329,14 @@ public:
 
         listener = webInputListener;
 
-        if (isPost)
+        if (hasBodyDataToSend)
             postBuffer = &headersAndPostData;
 
         size_t lastPos = static_cast<size_t> (-1);
 
         // step until either: 1) there is an error 2) the transaction is complete
         // or 3) data is in the in buffer
-        while ((! finished) && curlBuffer.getSize() == 0)
+        while ((! finished) && curlBuffer.isEmpty())
         {
             {
                 const ScopedLock lock (cleanupLock);
@@ -327,7 +348,7 @@ public:
             singleStep();
 
             // call callbacks if this is a post request
-            if (isPost && listener != nullptr && lastPos != postPosition)
+            if (hasBodyDataToSend && listener != nullptr && lastPos != postPosition)
             {
                 lastPos = postPosition;
 
@@ -598,7 +619,7 @@ public:
     // Options
     int timeOutMs = 0;
     int maxRedirects = 5;
-    const bool isPost;
+    const bool addParametersToRequestBody, hasBodyDataToSend;
     String httpRequest;
 
     //==============================================================================
@@ -627,9 +648,9 @@ public:
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };
 
-URL::DownloadTask* URL::downloadToFile (const File& targetLocation, String extraHeaders, DownloadTask::Listener* listener, bool shouldUsePost)
+std::unique_ptr<URL::DownloadTask> URL::downloadToFile (const File& targetLocation, const DownloadTaskOptions& options)
 {
-    return URL::DownloadTask::createFallbackDownloader (*this, targetLocation, extraHeaders, listener, shouldUsePost);
+    return URL::DownloadTask::createFallbackDownloader (*this, targetLocation, options);
 }
 
 } // namespace juce

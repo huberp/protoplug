@@ -8,28 +8,28 @@
 //
 //-----------------------------------------------------------------------------
 // LICENSE
-// (c) 2018, Steinberg Media Technologies GmbH, All Rights Reserved
+// (c) 2021, Steinberg Media Technologies GmbH, All Rights Reserved
 //-----------------------------------------------------------------------------
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-//
-//   * Redistributions of source code must retain the above copyright notice,
+// 
+//   * Redistributions of source code must retain the above copyright notice, 
 //     this list of conditions and the following disclaimer.
 //   * Redistributions in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
+//     this list of conditions and the following disclaimer in the documentation 
 //     and/or other materials provided with the distribution.
 //   * Neither the name of the Steinberg Media Technologies nor the names of its
-//     contributors may be used to endorse or promote products derived from this
+//     contributors may be used to endorse or promote products derived from this 
 //     software without specific prior written permission.
-//
+// 
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 // OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE  OF THIS SOFTWARE, EVEN IF ADVISED
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 //-----------------------------------------------------------------------------
@@ -43,7 +43,7 @@ namespace Vst {
 //------------------------------------------------------------------------
 // ComponentBase Implementation
 //------------------------------------------------------------------------
-ComponentBase::ComponentBase () : hostContext (nullptr), peerConnection (nullptr)
+ComponentBase::ComponentBase ()
 {
 }
 
@@ -60,8 +60,6 @@ tresult PLUGIN_API ComponentBase::initialize (FUnknown* context)
 		return kResultFalse;
 
 	hostContext = context;
-	if (hostContext)
-		hostContext->addRef ();
 
 	return kResultOk;
 }
@@ -70,18 +68,13 @@ tresult PLUGIN_API ComponentBase::initialize (FUnknown* context)
 tresult PLUGIN_API ComponentBase::terminate ()
 {
 	// release host interfaces
-	if (hostContext)
-	{
-		hostContext->release ();
-		hostContext = nullptr;
-	}
+	hostContext = nullptr;
 
 	// in case host did not disconnect us,
 	// release peer now
 	if (peerConnection)
 	{
 		peerConnection->disconnect (this);
-		peerConnection->release ();
 		peerConnection = nullptr;
 	}
 
@@ -99,7 +92,6 @@ tresult PLUGIN_API ComponentBase::connect (IConnectionPoint* other)
 		return kResultFalse;
 
 	peerConnection = other;
-	peerConnection->addRef ();
 	return kResultOk;
 }
 
@@ -108,7 +100,6 @@ tresult PLUGIN_API ComponentBase::disconnect (IConnectionPoint* other)
 {
 	if (peerConnection && other == peerConnection)
 	{
-		peerConnection->release ();
 		peerConnection = nullptr;
 		return kResultOk;
 	}
@@ -121,11 +112,10 @@ tresult PLUGIN_API ComponentBase::notify (IMessage* message)
 	if (!message)
 		return kInvalidArgument;
 
-	if (!strcmp (message->getMessageID (), "TextMessage"))
+	if (FIDStringsEqual (message->getMessageID (), "TextMessage"))
 	{
 		TChar string[256] = {0};
-		if (message->getAttributes ()->getString ("Text", string,
-		                                          sizeof (string) / sizeof (char16)) == kResultOk)
+		if (message->getAttributes ()->getString ("Text", string, sizeof (string)) == kResultOk)
 		{
 			String tmp (string);
 			tmp.toMultiByte (kCP_Utf8);
@@ -137,7 +127,7 @@ tresult PLUGIN_API ComponentBase::notify (IMessage* message)
 }
 
 //------------------------------------------------------------------------
-IMessage* ComponentBase::allocateMessage ()
+IMessage* ComponentBase::allocateMessage () const
 {
 	FUnknownPtr<IHostApplication> hostApp (hostContext);
 	if (hostApp)
@@ -146,7 +136,7 @@ IMessage* ComponentBase::allocateMessage ()
 }
 
 //------------------------------------------------------------------------
-tresult ComponentBase::sendMessage (IMessage* message)
+tresult ComponentBase::sendMessage (IMessage* message) const
 {
 	if (message != nullptr && getPeer () != nullptr)
 		return getPeer ()->notify (message);
@@ -154,19 +144,29 @@ tresult ComponentBase::sendMessage (IMessage* message)
 }
 
 //------------------------------------------------------------------------
-tresult ComponentBase::sendTextMessage (const char8* text)
+tresult ComponentBase::sendTextMessage (const char8* text) const
 {
-	IMessage* message = allocateMessage ();
-	if (!message)
-		return kResultFalse;
+	if (auto msg = owned (allocateMessage ()))
+	{
+		msg->setMessageID ("TextMessage");
+		String tmp (text, kCP_Utf8);
+		if (tmp.length () >= 256)
+			tmp.remove (255);
+		msg->getAttributes ()->setString ("Text", tmp.text16 ());
+		return sendMessage (msg);
+	}
+	return kResultFalse;
+}
 
-	FReleaser msgReleaser (message);
-	message->setMessageID ("TextMessage");
-	String tmp (text, kCP_Utf8);
-	if (tmp.length () >= 256)
-		tmp.remove (255);
-	message->getAttributes ()->setString ("Text", tmp.text16 ());
-	return sendMessage (message);
+//------------------------------------------------------------------------
+tresult ComponentBase::sendMessageID (const char* messageID) const
+{
+	if (auto msg = owned (allocateMessage ()))
+	{
+		msg->setMessageID (messageID);
+		return sendMessage (msg);
+	}
+	return kResultFalse;
 }
 
 //------------------------------------------------------------------------

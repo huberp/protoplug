@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -46,21 +46,21 @@ struct ZipFile::ZipEntryHolder
         entry.uncompressedSize = (int64) readUnalignedLittleEndianInt (buffer + 24);
         streamOffset           = (int64) readUnalignedLittleEndianInt (buffer + 42);
 
-        auto externalFileAttributes = (int32) readUnalignedLittleEndianInt (buffer + 38);
-        auto fileType   = (externalFileAttributes >> 28) & 0xf;
-
+        entry.externalFileAttributes = readUnalignedLittleEndianInt (buffer + 38);
+        auto fileType = (entry.externalFileAttributes >> 28) & 0xf;
         entry.isSymbolicLink = (fileType == 0xA);
+
         entry.filename = String::fromUTF8 (buffer + 46, fileNameLen);
     }
 
     static Time parseFileTime (uint32 time, uint32 date) noexcept
     {
-        int year      = 1980 + (date >> 9);
-        int month     = ((date >> 5) & 15) - 1;
-        int day       = date & 31;
-        int hours     = time >> 11;
-        int minutes   = (time >> 5) & 63;
-        int seconds   = (int) ((time & 31) << 1);
+        auto year      = (int) (1980 + (date >> 9));
+        auto month     = (int) (((date >> 5) & 15) - 1);
+        auto day       = (int) (date & 31);
+        auto hours     = (int) time >> 11;
+        auto minutes   = (int) ((time >> 5) & 63);
+        auto seconds   = (int) ((time & 31) << 1);
 
         return { year, month, day, hours, minutes, seconds };
     }
@@ -77,7 +77,7 @@ static int64 findCentralDirectoryFileHeader (InputStream& input, int& numEntries
 
     in.setPosition (in.getTotalLength());
     auto pos = in.getPosition();
-    auto lowestPos = jmax ((int64) 0, pos - 1024);
+    auto lowestPos = jmax ((int64) 0, pos - 1048576);
     char buffer[32] = {};
 
     while (pos > lowestPos)
@@ -122,6 +122,19 @@ static int64 findCentralDirectoryFileHeader (InputStream& input, int& numEntries
     return 0;
 }
 
+static bool hasSymbolicPart (const File& root, const File& f)
+{
+    jassert (root == f || f.isAChildOf (root));
+
+    for (auto p = f; p != root; p = p.getParentDirectory())
+    {
+        if (p.isSymbolicLink())
+            return true;
+    }
+
+    return false;
+}
+
 //==============================================================================
 struct ZipFile::ZipInputStream  : public InputStream
 {
@@ -154,7 +167,7 @@ struct ZipFile::ZipInputStream  : public InputStream
         }
     }
 
-    ~ZipInputStream()
+    ~ZipInputStream() override
     {
        #if JUCE_DEBUG
         if (inputStream != nullptr && inputStream == file.inputStream)
@@ -369,16 +382,16 @@ void ZipFile::init()
                         break;
 
                     auto* buffer = static_cast<const char*> (headerData.getData()) + pos;
-                    auto fileNameLen = readUnalignedLittleEndianShort (buffer + 28);
+                    auto fileNameLen = readUnalignedLittleEndianShort (buffer + 28u);
 
                     if (pos + 46 + fileNameLen > size)
                         break;
 
                     entries.add (new ZipEntryHolder (buffer, fileNameLen));
 
-                    pos += 46 + fileNameLen
-                            + readUnalignedLittleEndianShort (buffer + 30)
-                            + readUnalignedLittleEndianShort (buffer + 32);
+                    pos += 46u + fileNameLen
+                            + readUnalignedLittleEndianShort (buffer + 30u)
+                            + readUnalignedLittleEndianShort (buffer + 32u);
                 }
             }
         }
@@ -401,6 +414,14 @@ Result ZipFile::uncompressTo (const File& targetDirectory,
 
 Result ZipFile::uncompressEntry (int index, const File& targetDirectory, bool shouldOverwriteFiles)
 {
+    return uncompressEntry (index,
+                            targetDirectory,
+                            shouldOverwriteFiles ? OverwriteFiles::yes : OverwriteFiles::no,
+                            FollowSymlinks::no);
+}
+
+Result ZipFile::uncompressEntry (int index, const File& targetDirectory, OverwriteFiles overwriteFiles, FollowSymlinks followSymlinks)
+{
     auto* zei = entries.getUnchecked (index);
 
    #if JUCE_WINDOWS
@@ -414,6 +435,9 @@ Result ZipFile::uncompressEntry (int index, const File& targetDirectory, bool sh
 
     auto targetFile = targetDirectory.getChildFile (entryPath);
 
+    if (! targetFile.isAChildOf (targetDirectory))
+        return Result::fail ("Entry " + entryPath + " is outside the target directory");
+
     if (entryPath.endsWithChar ('/') || entryPath.endsWithChar ('\\'))
         return targetFile.createDirectory(); // (entry is a directory, not a file)
 
@@ -424,12 +448,15 @@ Result ZipFile::uncompressEntry (int index, const File& targetDirectory, bool sh
 
     if (targetFile.exists())
     {
-        if (! shouldOverwriteFiles)
+        if (overwriteFiles == OverwriteFiles::no)
             return Result::ok();
 
         if (! targetFile.deleteFile())
             return Result::fail ("Failed to write to target file: " + targetFile.getFullPathName());
     }
+
+    if (followSymlinks == FollowSymlinks::no && hasSymbolicPart (targetDirectory, targetFile.getParentDirectory()))
+        return Result::fail ("Parent directory leads through symlink for target file: " + targetFile.getFullPathName());
 
     if (! targetFile.getParentDirectory().createDirectory())
         return Result::fail ("Failed to create target folder: " + targetFile.getParentDirectory().getFullPathName());
@@ -541,7 +568,7 @@ private:
     {
         if (stream == nullptr)
         {
-            stream.reset (file.createInputStream());
+            stream = file.createInputStream();
 
             if (stream == nullptr)
                 return false;
@@ -577,7 +604,7 @@ private:
         target.writeInt ((int) checksum);
         target.writeInt ((int) (uint32) compressedSize);
         target.writeInt ((int) (uint32) uncompressedSize);
-        target.writeShort ((short) storedPathname.toUTF8().sizeInBytes() - 1);
+        target.writeShort (static_cast<short> (storedPathname.toUTF8().sizeInBytes() - 1));
         target.writeShort (0); // extra field length
     }
 
@@ -638,19 +665,20 @@ bool ZipFile::Builder::writeToStream (OutputStream& target, double* const progre
     return true;
 }
 
+
+//==============================================================================
 //==============================================================================
 #if JUCE_UNIT_TESTS
 
 struct ZIPTests   : public UnitTest
 {
-    ZIPTests()   : UnitTest ("ZIP") {}
+    ZIPTests()
+        : UnitTest ("ZIP", UnitTestCategories::compression)
+    {}
 
-    void runTest() override
+    static MemoryBlock createZipMemoryBlock (const StringArray& entryNames)
     {
-        beginTest ("ZIP");
-
         ZipFile::Builder builder;
-        StringArray entryNames { "first", "second", "third" };
         HashMap<String, MemoryBlock> blocks;
 
         for (auto& entryName : entryNames)
@@ -665,8 +693,61 @@ struct ZIPTests   : public UnitTest
         MemoryBlock data;
         MemoryOutputStream mo (data, false);
         builder.writeToStream (mo, nullptr);
-        MemoryInputStream mi (data, false);
 
+        return data;
+    }
+
+    void runZipSlipTest()
+    {
+        const std::map<String, bool> testCases = { { "a",                    true  },
+#if JUCE_WINDOWS
+                                                   { "C:/b",                 false },
+#else
+                                                   { "/b",                   false },
+#endif
+                                                   { "c/d",                  true  },
+                                                   { "../e/f",               false },
+                                                   { "../../g/h",            false },
+                                                   { "i/../j",               true  },
+                                                   { "k/l/../",              true  },
+                                                   { "m/n/../../",           false },
+                                                   { "o/p/../../../",        false } };
+
+        StringArray entryNames;
+
+        for (const auto& testCase : testCases)
+            entryNames.add (testCase.first);
+
+        TemporaryFile tmpDir;
+        tmpDir.getFile().createDirectory();
+        auto data = createZipMemoryBlock (entryNames);
+        MemoryInputStream mi (data, false);
+        ZipFile zip (mi);
+
+        for (int i = 0; i < zip.getNumEntries(); ++i)
+        {
+            const auto result = zip.uncompressEntry (i, tmpDir.getFile());
+            const auto caseIt = testCases.find (zip.getEntry (i)->filename);
+
+            if (caseIt != testCases.end())
+            {
+                expect (result.wasOk() == caseIt->second,
+                        zip.getEntry (i)->filename + " was unexpectedly " + (result.wasOk() ? "OK" : "not OK"));
+            }
+            else
+            {
+                expect (false);
+            }
+        }
+    }
+
+    void runTest() override
+    {
+        beginTest ("ZIP");
+
+        StringArray entryNames { "first", "second", "third" };
+        auto data = createZipMemoryBlock (entryNames);
+        MemoryInputStream mi (data, false);
         ZipFile zip (mi);
 
         expectEquals (zip.getNumEntries(), entryNames.size());
@@ -677,6 +758,9 @@ struct ZIPTests   : public UnitTest
             std::unique_ptr<InputStream> input (zip.createStreamForEntry (*entry));
             expectEquals (input->readEntireStreamAsString(), entryName);
         }
+
+        beginTest ("ZipSlip");
+        runZipSlipTest();
     }
 };
 

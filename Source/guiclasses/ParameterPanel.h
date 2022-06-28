@@ -2,6 +2,7 @@
 
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "../PluginProcessor.h"
+#include "../ProtoplugUtil.h"
 
 class ParamSlider	:	public Slider 
 {
@@ -101,7 +102,7 @@ public:
 	{
 		for (int i=0; i<NPARAMS; i++) {
 			String s = processor->luli->getParameterName(i);
-			if (s==String::empty) {
+			if (s==ProtoplugUtil::EmptyString) {
 				s = "nameless";
 				labels[i]->setColour(Label::textColourId, Colours::grey);
 			} else

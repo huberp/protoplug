@@ -623,7 +623,7 @@ private:
     {
     }
 
-    LowLevelGraphicsContext* createLowLevelContext()
+    std::unique_ptr< LowLevelGraphicsContext > 	createLowLevelContext()
     {
       // this image is read-only
       jassertfalse;
@@ -637,9 +637,9 @@ private:
       return dup;
     }
 
-    ImageType* createType () const
+    std::unique_ptr< ImageType > createType () const
     {
-      return new SoftwareImageType;
+      return std::unique_ptr<SoftwareImageType>();
     }
 
     void initialiseBitmapData (Image::BitmapData& bitmapData, int x, int y, Image::BitmapData::ReadWriteMode /*mode*/)

@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -19,6 +19,14 @@
 
   ==============================================================================
 */
+
+#if ! defined (DOXYGEN) && (JUCE_MAC || JUCE_IOS)
+ #if __LP64__
+  using OSType = unsigned int;
+ #else
+  using OSType = unsigned long;
+ #endif
+#endif
 
 namespace juce
 {
@@ -48,7 +56,7 @@ public:
 
         You can use its operator= method to point it at a proper file.
     */
-    File() noexcept  {}
+    File() = default;
 
     /** Creates a file from an absolute path.
 
@@ -66,7 +74,7 @@ public:
     File (const File&);
 
     /** Destructor. */
-    ~File() noexcept  {}
+    ~File() = default;
 
     /** Sets the file based on an absolute pathname.
 
@@ -114,7 +122,7 @@ public:
     bool isDirectory() const;
 
     /** Checks whether the path of this file represents the root of a file system,
-        irrespective of its existance.
+        irrespective of its existence.
 
         This will return true for "C:", "D:", etc on Windows and "/" on other
         platforms.
@@ -552,6 +560,23 @@ public:
         ignoreHiddenFiles           = 4     /**< Add this flag to avoid returning any hidden files in the results. */
     };
 
+    enum class FollowSymlinks
+    {
+        /** Requests that a file system traversal should not follow any symbolic links. */
+        no,
+
+        /** Requests that a file system traversal may follow symbolic links, but should attempt to
+            skip any symbolic links to directories that may cause a cycle.
+        */
+        noCycles,
+
+        /** Requests that a file system traversal follow all symbolic links. Use with care, as this
+            may produce inconsistent results, or fail to terminate, if the filesystem contains cycles
+            due to symbolic links.
+        */
+        yes
+    };
+
     /** Searches this directory for files matching a wildcard pattern.
 
         Assuming that this file is a directory, this method will search it
@@ -564,13 +589,15 @@ public:
         @param searchRecursively        if true, all subdirectories will be recursed into to do
                                         an exhaustive search
         @param wildCardPattern          the filename pattern to search for, e.g. "*.txt"
+        @param followSymlinks           the method that should be used to handle symbolic links
         @returns                        the set of files that were found
 
-        @see getNumberOfChildFiles, DirectoryIterator
+        @see getNumberOfChildFiles, RangedDirectoryIterator
     */
     Array<File> findChildFiles (int whatToLookFor,
                                 bool searchRecursively,
-                                const String& wildCardPattern = "*") const;
+                                const String& wildCardPattern = "*",
+                                FollowSymlinks followSymlinks = FollowSymlinks::yes) const;
 
     /** Searches inside a directory for files matching a wildcard pattern.
         Note that there's a newer, better version of this method which returns the results
@@ -578,7 +605,8 @@ public:
         mainly for legacy code to use.
     */
     int findChildFiles (Array<File>& results, int whatToLookFor,
-                        bool searchRecursively, const String& wildCardPattern = "*") const;
+                        bool searchRecursively, const String& wildCardPattern = "*",
+                        FollowSymlinks followSymlinks = FollowSymlinks::yes) const;
 
     /** Searches inside a directory and counts how many files match a wildcard pattern.
 
@@ -594,7 +622,8 @@ public:
                                 is also added to this value, hidden files won't be counted
         @param wildCardPattern  the filename pattern to search for, e.g. "*.txt"
         @returns                the number of matches found
-        @see findChildFiles, DirectoryIterator
+
+        @see findChildFiles, RangedDirectoryIterator
     */
     int getNumberOfChildFiles (int whatToLookFor,
                                const String& wildCardPattern = "*") const;
@@ -607,23 +636,55 @@ public:
     //==============================================================================
     /** Creates a stream to read from this file.
 
+        Note that this is an old method, and actually it's usually best to avoid it and
+        instead use an RAII pattern with an FileInputStream directly, e.g.
+        @code
+        FileInputStream input (fileToOpen);
+
+        if (input.openedOk())
+        {
+            input.read (etc...
+        }
+        @endcode
+
         @returns    a stream that will read from this file (initially positioned at the
                     start of the file), or nullptr if the file can't be opened for some reason
         @see createOutputStream, loadFileAsData
     */
-    FileInputStream* createInputStream() const;
+    std::unique_ptr<FileInputStream> createInputStream() const;
 
     /** Creates a stream to write to this file.
 
+        Note that this is an old method, and actually it's usually best to avoid it and
+        instead use an RAII pattern with an FileOutputStream directly, e.g.
+        @code
+        FileOutputStream output (fileToOpen);
+
+        if (output.openedOk())
+        {
+            output.read etc...
+        }
+        @endcode
+
         If the file exists, the stream that is returned will be positioned ready for
-        writing at the end of the file, so you might want to use deleteFile() first
-        to write to an empty file.
+        writing at the end of the file. If you want to write to the start of the file,
+        replacing the existing content, then you can do the following:
+        @code
+        FileOutputStream output (fileToOverwrite);
+
+        if (output.openedOk())
+        {
+            output.setPosition (0);
+            output.truncate();
+            ...
+        }
+        @endcode
 
         @returns    a stream that will write to this file (initially positioned at the
                     end of the file), or nullptr if the file can't be opened for some reason
         @see createInputStream, appendData, appendText
     */
-    FileOutputStream* createOutputStream (size_t bufferSize = 0x8000) const;
+    std::unique_ptr<FileOutputStream> createOutputStream (size_t bufferSize = 0x8000) const;
 
     //==============================================================================
     /** Loads a file's contents into memory as a block of binary data.
@@ -901,7 +962,10 @@ public:
 
             @see globalApplicationsDirectory
         */
-        globalApplicationsDirectoryX86
+        globalApplicationsDirectoryX86,
+
+        /** On a Windows machine returns the %LOCALAPPDATA% folder. */
+        windowsLocalAppData
        #endif
     };
 
@@ -1033,6 +1097,17 @@ public:
     void addToDock() const;
    #endif
 
+   #if JUCE_MAC || JUCE_IOS
+    /** Returns the path to the container shared by all apps with the provided app group ID.
+
+        You *must* pass one of the app group IDs listed in your app's entitlements file.
+
+        On failure, this function may return a non-existent file, so you should check
+        that the path exists and is writable before trying to use it.
+    */
+    static File getContainerForSecurityApplicationGroupIdentifier (const String& appGroup);
+   #endif
+
     //==============================================================================
     /** Comparator for files */
     struct NaturalFileComparator
@@ -1054,14 +1129,16 @@ public:
         bool foldersFirst;
     };
 
+   #if JUCE_ALLOW_STATIC_NULL_VARIABLES && ! defined (DOXYGEN)
     /* These static objects are deprecated because it's too easy to accidentally use them indirectly
        during a static constructor, which leads to very obscure order-of-initialisation bugs.
        Use File::getSeparatorChar() and File::getSeparatorString(), and instead of File::nonexistent,
        just use File() or {}.
     */
-    JUCE_DEPRECATED_STATIC (static const juce_wchar separator;)
-    JUCE_DEPRECATED_STATIC (static const StringRef separatorString;)
-    JUCE_DEPRECATED_STATIC (static const File nonexistent;)
+    [[deprecated]] static const juce_wchar separator;
+    [[deprecated]] static const StringRef separatorString;
+    [[deprecated]] static const File nonexistent;
+   #endif
 
 private:
     //==============================================================================

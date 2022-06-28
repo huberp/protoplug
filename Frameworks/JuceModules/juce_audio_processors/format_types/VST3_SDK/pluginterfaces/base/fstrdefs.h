@@ -9,7 +9,7 @@
 //-----------------------------------------------------------------------------
 // This file is part of a Steinberg SDK. It is subject to the license terms
 // in the LICENSE file found in the top-level directory of this distribution
-// and at www.steinberg.net/sdklicenses.
+// and at www.steinberg.net/sdklicenses. 
 // No part of the SDK, including this file, may be copied, modified, propagated,
 // or distributed except according to the terms contained in the LICENSE file.
 //-----------------------------------------------------------------------------
@@ -19,7 +19,7 @@
 #include "ftypes.h"
 
 //----------------------------------------------------------------------------
-// string methods defines unicode / ASCII
+/** string methods defines unicode / ASCII */
 //----------------------------------------------------------------------------
 
 // 16 bit string operations
@@ -265,10 +265,8 @@ inline void str8ToStr16 (char16* dst, const char8* src, int32 n = -1)
 #else
 		dst[i] = static_cast<char16> (src[i]);
 #endif
-
 		if (src[i] == 0)
 			break;
-
 		i++;
 	}
 

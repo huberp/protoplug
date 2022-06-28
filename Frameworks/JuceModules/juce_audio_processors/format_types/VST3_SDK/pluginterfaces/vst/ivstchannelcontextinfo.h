@@ -9,7 +9,7 @@
 //-----------------------------------------------------------------------------
 // This file is part of a Steinberg SDK. It is subject to the license terms
 // in the LICENSE file found in the top-level directory of this distribution
-// and at www.steinberg.net/sdklicenses.
+// and at www.steinberg.net/sdklicenses. 
 // No part of the SDK, including this file, may be copied, modified, propagated,
 // or distributed except according to the terms contained in the LICENSE file.
 //-----------------------------------------------------------------------------
@@ -26,6 +26,7 @@
 //------------------------------------------------------------------------
 namespace Steinberg {
 namespace Vst {
+
 /** For Channel Context Info Interface */
 namespace ChannelContext {
 
@@ -35,22 +36,24 @@ namespace ChannelContext {
 
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
-/** Channel Context Interface.
+/** Channel context interface: Vst::IInfoListener
 \ingroup vstIHost vst365
 - [plug imp]
 - [extends IEditController]
 - [released: 3.6.5]
 - [optional]
 
-Allows the host to inform the Plug-in about the context in which the Plug-in is instantiated,
-mainly channel based info (color, name, index,...). Index could be defined inside a namespace
-(for example index start from 1 to N for Type Input/Output Channel (Index namespace) and index
+Allows the host to inform the plug-in about the context in which the plug-in is instantiated,
+mainly channel based info (color, name, index,...). Index can be defined inside a namespace 
+(for example, index start from 1 to N for Type Input/Output Channel (Index namespace) and index 
 start from 1 to M for Type Audio Channel).\n
-As soon as the Plug-in provides this IInfoListener interface, the host will call setChannelContextInfos
+As soon as the plug-in provides this IInfoListener interface, the host will call setChannelContextInfos 
 for each change occurring to this channel (new name, new color, new indexation,...)
 
 \section IChannelContextExample Example
-\code
+
+\code{.cpp}
+//------------------------------------------------------------------------
 tresult PLUGIN_API MyPlugin::setChannelContextInfos (IAttributeList* list)
 {
 	if (list)
@@ -61,8 +64,8 @@ tresult PLUGIN_API MyPlugin::setChannelContextInfos (IAttributeList* list)
 		{
 			...
 		}
-
-		// get the Channel Name where we, as Plug-in, are instantiated
+		
+		// get the Channel Name where we, as plug-in, are instantiated
 		String128 name;
 		if (list->getString (ChannelContext::kChannelNameKey, name, sizeof (name)) == kResultTrue)
 		{
@@ -74,14 +77,14 @@ tresult PLUGIN_API MyPlugin::setChannelContextInfos (IAttributeList* list)
 		{
 			...
 		}
-
+		
 		// get Channel Index
 		int64 index;
 		if (list->getInt (ChannelContext::kChannelIndexKey, index) == kResultTrue)
 		{
 			...
 		}
-
+		
 		// get the Channel Color
 		int64 color;
 		if (list->getInt (ChannelContext::kChannelColorKey, color) == kResultTrue)
@@ -102,13 +105,13 @@ tresult PLUGIN_API MyPlugin::setChannelContextInfos (IAttributeList* list)
 		{
 			...
 		}
-
+	
 		// get the channel Index Namespace Length
 		if (list->getInt (ChannelContext::kChannelIndexNamespaceLengthKey, length) == kResultTrue)
 		{
 			...
 		}
-
+		
 		// get the channel Index Namespace
 		String128 namespaceName;
 		if (list->getString (ChannelContext::kChannelIndexNamespaceKey, namespaceName, sizeof (namespaceName)) == kResultTrue)
@@ -116,7 +119,7 @@ tresult PLUGIN_API MyPlugin::setChannelContextInfos (IAttributeList* list)
 			...
 		}
 
-		// get Plug-in Channel Location
+		// get plug-in Channel Location
 		int64 location;
 		if (list->getInt (ChannelContext::kChannelPluginLocationKey, location) == kResultTrue)
 		{
@@ -136,13 +139,13 @@ tresult PLUGIN_API MyPlugin::setChannelContextInfos (IAttributeList* list)
 				break;
 			}
 		}
-
+		
 		// do not forget to call addRef () if you want to keep this list
 	}
 }
-\endcode */
-//------------------------------------------------------------------------
-class IInfoListener: public FUnknown
+\endcode 
+*/
+class IInfoListener : public FUnknown
 {
 public:
 	/** Receive the channel context infos from host. */
@@ -156,7 +159,6 @@ DECLARE_CLASS_IID (IInfoListener, 0x0F194781, 0x8D984ADA, 0xBBA0C1EF, 0xC011D8D0
 
 //------------------------------------------------------------------------
 /** Values used for kChannelPluginLocationKey */
-//------------------------------------------------------------------------
 enum ChannelPluginLocation
 {
 	kPreVolumeFader = 0,
@@ -167,12 +169,22 @@ enum ChannelPluginLocation
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
 // Colors
-typedef uint32 ColorSpec;	///< ARGB (Alpha-Red-Green-Blue)
+//------------------------------------------------------------------------
+/** \defgroup vst3typedef VST 3 Data Types */
+/*@{*/
+//------------------------------------------------------------------------
+/** ARGB (Alpha-Red-Green-Blue) */
+typedef uint32 ColorSpec;
 typedef uint8 ColorComponent;
+/*@}*/
 
+/** Returns the Blue part of the given ColorSpec */
 inline ColorComponent GetBlue (ColorSpec cs)	{return (ColorComponent)(cs & 0x000000FF); }
+/** Returns the Green part of the given ColorSpec */
 inline ColorComponent GetGreen (ColorSpec cs)	{return (ColorComponent)((cs >> 8) & 0x000000FF); }
+/** Returns the Red part of the given ColorSpec */
 inline ColorComponent GetRed (ColorSpec cs)		{return (ColorComponent)((cs >> 16) & 0x000000FF); }
+/** Returns the Alpha part of the given ColorSpec */
 inline ColorComponent GetAlpha (ColorSpec cs)	{return (ColorComponent)((cs >> 24) & 0x000000FF); }
 
 //------------------------------------------------------------------------
@@ -211,12 +223,12 @@ const CString kChannelIndexNamespaceKey = "channel index namespace";
 const CString kChannelIndexNamespaceLengthKey =	"channel index namespace length";
 
 /** PNG image representation as binary [optional] */
-const CString kChannelImageKey = "channel image";
+const CString kChannelImageKey = "channel image"; 
 
-/** integer (int64) [optional]: routing position of the Plug-in in the channel (see ChannelPluginLocation) */
+/** integer (int64) [optional]: routing position of the plug-in in the channel (see ChannelPluginLocation) */
 const CString kChannelPluginLocationKey = "channel plugin location";
-//------------------------------------------------------------------------
 
+//------------------------------------------------------------------------
 } // namespace ChannelContext
 } // namespace Vst
 } // namespace Steinberg

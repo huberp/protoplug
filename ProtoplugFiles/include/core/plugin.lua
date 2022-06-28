@@ -7,6 +7,15 @@
 ffi.cdef [[
 
 // pasted from juce_AudioPlayHead.h
+// FrameRate has been introduced in Juce 6
+typedef struct FrameRate
+{
+	int base;
+    bool drop;
+	bool pulldown;
+} FrameRate;
+
+//FrameRate has to be used here
 typedef struct CurrentPositionInfo
 {
 	double bpm;
@@ -17,7 +26,7 @@ typedef struct CurrentPositionInfo
 	double editOriginTime;
 	double ppqPosition;
 	double ppqPositionOfLastBarStart;
-	int frameRate;
+	FrameRate frameRate;
 	bool isPlaying;
 	bool isRecording;
 	double ppqLoopStart;

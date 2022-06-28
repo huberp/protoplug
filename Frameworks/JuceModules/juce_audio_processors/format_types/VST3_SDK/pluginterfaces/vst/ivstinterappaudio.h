@@ -9,7 +9,7 @@
 //-----------------------------------------------------------------------------
 // This file is part of a Steinberg SDK. It is subject to the license terms
 // in the LICENSE file found in the top-level directory of this distribution
-// and at www.steinberg.net/sdklicenses.
+// and at www.steinberg.net/sdklicenses. 
 // No part of the SDK, including this file, may be copied, modified, propagated,
 // or distributed except according to the terms contained in the LICENSE file.
 //-----------------------------------------------------------------------------
@@ -31,10 +31,11 @@ class IInterAppAudioPresetManager;
 - [host imp]
 - [passed as 'context' to IPluginBase::initialize () ]
 - [released: 3.6.0]
+- [optional]
 
-Implemented by the InterAppAudio Wrapper. */
-//------------------------------------------------------------------------
-class IInterAppAudioHost: public FUnknown
+Implemented by the InterAppAudio Wrapper.
+*/
+class IInterAppAudioHost : public FUnknown
 {
 public:
 	/** get the size of the screen
@@ -91,13 +92,12 @@ public:
 DECLARE_CLASS_IID (IInterAppAudioHost, 0x0CE5743D, 0x68DF415E, 0xAE285BD4, 0xE2CDC8FD)
 
 //------------------------------------------------------------------------
-/** Extended Plug-in interface IEditController for Inter-App Audio connection state change notifications
+/** Extended plug-in interface IEditController for Inter-App Audio connection state change notifications
 \ingroup vstIPlug vst360
 - [plug imp]
 - [extends IEditController]
 - [released: 3.6.0]
 */
-//------------------------------------------------------------------------
 class IInterAppAudioConnectionNotification : public FUnknown
 {
 public:
@@ -106,33 +106,32 @@ public:
 	*/
 	virtual void PLUGIN_API onInterAppAudioConnectionStateChange (TBool newState) = 0;
 
-	//------------------------------------------------------------------------
+	//------------------------------------------------------------------------	
 	static const FUID iid;
 };
 
 DECLARE_CLASS_IID (IInterAppAudioConnectionNotification, 0x6020C72D, 0x5FC24AA1, 0xB0950DB5, 0xD7D6D5CF)
 
 //------------------------------------------------------------------------
-/** Extended Plug-in interface IEditController for Inter-App Audio Preset Management
+/** Extended plug-in interface IEditController for Inter-App Audio Preset Management
 \ingroup vstIPlug vst360
 - [plug imp]
 - [extends IEditController]
 - [released: 3.6.0]
 */
-//------------------------------------------------------------------------
 class IInterAppAudioPresetManager : public FUnknown
 {
 public:
-	/** TODO */
+	/** Open the Preset Browser in order to load a preset */
 	virtual tresult PLUGIN_API runLoadPresetBrowser () = 0;
-	/** TODO */
+	/** Open the Preset Browser in order to save a preset */
 	virtual tresult PLUGIN_API runSavePresetBrowser () = 0;
-	/** TODO */
+	/** Load the next available preset */
 	virtual tresult PLUGIN_API loadNextPreset () = 0;
-	/** TODO */
+	/** Load the previous available preset */
 	virtual tresult PLUGIN_API loadPreviousPreset () = 0;
 
-	//------------------------------------------------------------------------
+	//------------------------------------------------------------------------	
 	static const FUID iid;
 };
 

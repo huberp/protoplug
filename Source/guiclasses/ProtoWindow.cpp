@@ -108,7 +108,7 @@ void ProtoWindow::readTheme(File f)
 	if (!f.exists())
 		return;
 	editor.setFont(Font(Font::getDefaultMonospacedFontName(), 14, 0));
-	ScopedPointer<XmlElement> root (XmlDocument(f).getDocumentElement());
+	ScopedPointer<XmlElement> root (XmlDocument(f).getDocumentElement().release());
 	if (!root)
 		return;
     CodeEditorComponent::ColourScheme cs = tok.getDefaultColourScheme();
@@ -181,7 +181,7 @@ void ProtoWindow::readPrefs()
 	File f = ProtoplugDir::Instance()->getDir().getChildFile("prefs.xml");
 	if (!f.exists())
 		return;
-	XmlElement *e = XmlDocument(f).getDocumentElement();
+	XmlElement *e = XmlDocument(f).getDocumentElement().get();
 	if (e) {
 		commMgr.getKeyMappings()->restoreFromXml(*e);
 		delete e;

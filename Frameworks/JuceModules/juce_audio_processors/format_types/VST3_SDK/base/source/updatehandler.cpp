@@ -9,28 +9,28 @@
 //
 //-----------------------------------------------------------------------------
 // LICENSE
-// (c) 2018, Steinberg Media Technologies GmbH, All Rights Reserved
+// (c) 2021, Steinberg Media Technologies GmbH, All Rights Reserved
 //-----------------------------------------------------------------------------
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-//
-//   * Redistributions of source code must retain the above copyright notice,
+// 
+//   * Redistributions of source code must retain the above copyright notice, 
 //     this list of conditions and the following disclaimer.
 //   * Redistributions in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
+//     this list of conditions and the following disclaimer in the documentation 
 //     and/or other materials provided with the distribution.
 //   * Neither the name of the Steinberg Media Technologies nor the names of its
-//     contributors may be used to endorse or promote products derived from this
+//     contributors may be used to endorse or promote products derived from this 
 //     software without specific prior written permission.
-//
+// 
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 // OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE  OF THIS SOFTWARE, EVEN IF ADVISED
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 //-----------------------------------------------------------------------------
@@ -128,28 +128,28 @@ struct UpdateData
 };
 
 //------------------------------------------------------------------------
-typedef std::deque<DeferedChange> DeferedChangeList;
-typedef DeferedChangeList::const_iterator DeferedChangeListIterConst;
-typedef DeferedChangeList::iterator DeferedChangeListIter;
+using DeferedChangeList = std::deque<DeferedChange>;
+using DeferedChangeListIterConst = DeferedChangeList::const_iterator;
+using DeferedChangeListIter = DeferedChangeList::iterator;
 
-typedef std::deque<UpdateData> UpdateDataList;
-typedef UpdateDataList::const_iterator UpdateDataListIterConst;
+using UpdateDataList = std::deque<UpdateData>;
+using UpdateDataListIterConst = UpdateDataList::const_iterator;
 
 #if CLASS_NAME_TRACKED
-typedef std::vector<Dependency> DependentList;
+using DependentList = std::vector<Dependency>;
 #else
 typedef std::vector<IDependent*> DependentList;
 #endif
-typedef DependentList::iterator DependentListIter;
-typedef DependentList::const_iterator DependentListIterConst;
+using DependentListIter = DependentList::iterator;
+using DependentListIterConst = DependentList::const_iterator;
 
 #if SMTG_CPP11_STDLIBSUPPORT
-typedef std::unordered_map<const FUnknown*, DependentList> DependentMap;
+using DependentMap = std::unordered_map<const FUnknown*, DependentList>;
 #else
 typedef std::map<const FUnknown*, DependentList> DependentMap;
 #endif
-typedef DependentMap::iterator DependentMapIter;
-typedef DependentMap::const_iterator DependentMapIterConst;
+using DependentMapIter = DependentMap::iterator;
+using DependentMapIterConst = DependentMap::const_iterator;
 
 struct Table
 {
@@ -261,7 +261,7 @@ tresult PLUGIN_API UpdateHandler::removeDependent (FUnknown* u, IDependent* depe
 			for (uint32 count = 0; count < (*iter).count; count++)
 			{
 				if ((*iter).dependents[count] == dependent)
-					(*iter).dependents[count] = 0;
+					(*iter).dependents[count] = nullptr;
 			}
 		}
 		++iter;
@@ -277,6 +277,8 @@ tresult PLUGIN_API UpdateHandler::removeDependent (FUnknown* u, IDependent* depe
 			{
 				Update::DependentList& list = (*iterMap).second;
 				Update::DependentListIter iterList = list.begin ();
+				bool listIsEmpty = false;
+				
 				while (iterList != list.end ())
 				{
 #if CLASS_NAME_TRACKED
@@ -285,14 +287,24 @@ tresult PLUGIN_API UpdateHandler::removeDependent (FUnknown* u, IDependent* depe
 					if ((*iterList) == dependent)
 #endif
 					{
-						iterList = list.erase (iterList);
+						if (list.size () == 1u)
+						{
+							listIsEmpty = true;
+							break;
+						}
+						else
+							iterList = list.erase (iterList);
 					}
 					else
 					{
 						++iterList;
 					}
 				}
-				++iterMap;
+				
+				if (listIsEmpty)
+					iterMap = map.erase (iterMap);
+				else
+					++iterMap;
 			}
 		}
 	}
@@ -386,7 +398,7 @@ tresult UpdateHandler::doTriggerUpdates (FUnknown* u, int32 message, bool suppre
 				{
 					if (dependents == smallDependents)
 					{
-						dependents = new IDependent*[Update::kMapSize];
+						dependents = NEW IDependent*[Update::kMapSize];
 						memcpy (dependents, smallDependents, count * sizeof (dependents[0]));
 						maxDependents = Update::kMapSize;
 					}
@@ -594,7 +606,7 @@ tresult PLUGIN_API UpdateHandler::cancelUpdates (FUnknown* u)
 	FGuard guard (lock);
 
 	Update::DeferedChange change (unknown, 0);
-	while (1)
+	while (true)
 	{
 		auto iter = std::find (table->defered.begin (), table->defered.end (), change);
 		if (iter != table->defered.end ())

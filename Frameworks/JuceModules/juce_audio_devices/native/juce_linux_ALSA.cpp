@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -50,7 +50,7 @@ namespace
 
 static void getDeviceSampleRates (snd_pcm_t* handle, Array<double>& rates)
 {
-    const int ratesToTry[] = { 22050, 32000, 44100, 48000, 88200, 96000, 176400, 192000, 0 };
+    const int ratesToTry[] = { 22050, 24000, 32000, 44100, 48000, 88200, 96000, 176400, 192000, 0 };
 
     snd_pcm_hw_params_t* hwParams;
     snd_pcm_hw_params_alloca (&hwParams);
@@ -261,7 +261,7 @@ public:
         unsigned int periods = 4;
         snd_pcm_uframes_t samplesPerPeriod = (snd_pcm_uframes_t) bufferSize;
 
-        if (JUCE_ALSA_FAILED (snd_pcm_hw_params_set_rate_near (handle, hwParams, &sampleRate, 0))
+        if (JUCE_ALSA_FAILED (snd_pcm_hw_params_set_rate_near (handle, hwParams, &sampleRate, nullptr))
             || JUCE_ALSA_FAILED (snd_pcm_hw_params_set_channels (handle, hwParams, (unsigned int ) numChannels))
             || JUCE_ALSA_FAILED (snd_pcm_hw_params_set_periods_near (handle, hwParams, &periods, &dir))
             || JUCE_ALSA_FAILED (snd_pcm_hw_params_set_period_size_near (handle, hwParams, &samplesPerPeriod, &dir))
@@ -494,7 +494,7 @@ public:
         initialiseRatesAndChannels();
     }
 
-    ~ALSAThread()
+    ~ALSAThread() override
     {
         close();
     }
@@ -722,7 +722,7 @@ public:
                 else
                 {
                     for (int i = 0; i < outputChannelDataForCallback.size(); ++i)
-                        zeromem (outputChannelDataForCallback[i], sizeof (float) * (size_t) bufferSize);
+                        zeromem (outputChannelDataForCallback[i], (size_t) bufferSize * sizeof (float));
                 }
             }
 
@@ -791,7 +791,7 @@ private:
     //==============================================================================
     const String inputId, outputId;
     std::unique_ptr<ALSADevice> outputDevice, inputDevice;
-    int numCallbacks = 0;
+    std::atomic<int> numCallbacks { 0 };
     bool audioIoInProgress = false;
 
     CriticalSection callbackLock;
@@ -853,7 +853,7 @@ public:
     {
     }
 
-    ~ALSAAudioIODevice()
+    ~ALSAAudioIODevice() override
     {
         close();
     }
@@ -1249,7 +1249,7 @@ private:
             snd_device_name_free_hint (hints);
         }
 
-        // sometimes the "default" device is not listed, but it is nice to see it explicitely in the list
+        // sometimes the "default" device is not listed, but it is nice to see it explicitly in the list
         if (! outputIds.contains ("default"))
             testDevice ("default", "Default ALSA Output", "Default ALSA Input");
 
@@ -1297,11 +1297,6 @@ AudioIODeviceType* createAudioIODeviceType_ALSA_Soundcards()
 AudioIODeviceType* createAudioIODeviceType_ALSA_PCMDevices()
 {
     return new ALSAAudioIODeviceType (false, "ALSA");
-}
-
-AudioIODeviceType* AudioIODeviceType::createAudioIODeviceType_ALSA()
-{
-    return createAudioIODeviceType_ALSA_PCMDevices();
 }
 
 } // namespace juce

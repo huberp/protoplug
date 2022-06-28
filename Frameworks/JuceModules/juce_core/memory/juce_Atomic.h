@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -43,7 +43,7 @@ struct Atomic  final
     using DiffType = typename AtomicHelpers::DiffTypeHelper<Type>::Type;
 
     /** Creates a new value, initialised to zero. */
-    Atomic() noexcept  : value (0) {}
+    Atomic() noexcept  : value (Type()) {}
 
     /** Creates a new value, with a given initial value. */
     Atomic (Type initialValue) noexcept  : value (initialValue) {}
@@ -136,10 +136,9 @@ struct Atomic  final
 
     //==============================================================================
    #ifndef DOXYGEN
-    /* This method has been deprecated as there is no equivalent method in
-       std::atomic. Use compareAndSetBool instead.
-    */
-    JUCE_DEPRECATED (Type compareAndSetValue (Type, Type) noexcept);
+    [[deprecated ("This method has been deprecated as there is no equivalent method in "
+                 "std::atomic. Use compareAndSetBool instead.")]]
+    Type compareAndSetValue (Type, Type) noexcept;
    #endif
 };
 

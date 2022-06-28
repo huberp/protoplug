@@ -9,28 +9,28 @@
 //
 //-----------------------------------------------------------------------------
 // LICENSE
-// (c) 2018, Steinberg Media Technologies GmbH, All Rights Reserved
+// (c) 2021, Steinberg Media Technologies GmbH, All Rights Reserved
 //-----------------------------------------------------------------------------
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-//
-//   * Redistributions of source code must retain the above copyright notice,
+// 
+//   * Redistributions of source code must retain the above copyright notice, 
 //     this list of conditions and the following disclaimer.
 //   * Redistributions in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
+//     this list of conditions and the following disclaimer in the documentation 
 //     and/or other materials provided with the distribution.
 //   * Neither the name of the Steinberg Media Technologies nor the names of its
-//     contributors may be used to endorse or promote products derived from this
+//     contributors may be used to endorse or promote products derived from this 
 //     software without specific prior written permission.
-//
+// 
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 // OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE  OF THIS SOFTWARE, EVEN IF ADVISED
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 //-----------------------------------------------------------------------------
@@ -57,7 +57,7 @@ public:
 	/** cancel pending messages send by \param object or by any if object is 0 */
 	virtual tresult PLUGIN_API cancelUpdates (FUnknown* object) = 0;
 	/** send pending messages send by \param object or by any if object is 0 */
-	virtual tresult PLUGIN_API triggerDeferedUpdates (FUnknown* object = 0) = 0;
+	virtual tresult PLUGIN_API triggerDeferedUpdates (FUnknown* object = nullptr) = 0;
 	static const FUID iid;
 };
 
@@ -86,20 +86,20 @@ public:
 
 	// IUpdateHandler
 	/** register \param dependent to get messages from \param object */
-	virtual tresult PLUGIN_API addDependent (FUnknown* object, IDependent* dependent) SMTG_OVERRIDE;
+	tresult PLUGIN_API addDependent (FUnknown* object, IDependent* dependent) SMTG_OVERRIDE;
 	/** unregister \param dependent to get no messages from \param object */
-	virtual tresult PLUGIN_API removeDependent (FUnknown* object,
+	tresult PLUGIN_API removeDependent (FUnknown* object,
 	                                            IDependent* dependent) SMTG_OVERRIDE;
 	/** send \param message to all dependents of \param object immediately */
-	virtual tresult PLUGIN_API triggerUpdates (FUnknown* object, int32 message) SMTG_OVERRIDE;
+	tresult PLUGIN_API triggerUpdates (FUnknown* object, int32 message) SMTG_OVERRIDE;
 	/** send \param message to all dependents of \param object when idle */
-	virtual tresult PLUGIN_API deferUpdates (FUnknown* object, int32 message) SMTG_OVERRIDE;
+	tresult PLUGIN_API deferUpdates (FUnknown* object, int32 message) SMTG_OVERRIDE;
 
 	// IUpdateManager
 	/** cancel pending messages send by \param object or by any if object is 0 */
-	virtual tresult PLUGIN_API cancelUpdates (FUnknown* object) SMTG_OVERRIDE;
+	tresult PLUGIN_API cancelUpdates (FUnknown* object) SMTG_OVERRIDE;
 	/** send pending messages send by \param object or by any if object is 0 */
-	virtual tresult PLUGIN_API triggerDeferedUpdates (FUnknown* object = 0) SMTG_OVERRIDE;
+	tresult PLUGIN_API triggerDeferedUpdates (FUnknown* object = nullptr) SMTG_OVERRIDE;
 
 	/// @cond ignore
 	// obsolete functions kept for compatibility
@@ -120,7 +120,7 @@ public:
 #endif
 	/// @endcond
 	size_t countDependencies (FUnknown* object = nullptr);
-
+	
 	OBJ_METHODS (UpdateHandler, FObject)
 	FUNKNOWN_METHODS2 (IUpdateHandler, IUpdateManager, FObject)
 	SINGLETON (UpdateHandler)

@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -33,12 +33,12 @@ StringArray::StringArray (const StringArray& other)
 }
 
 StringArray::StringArray (StringArray&& other) noexcept
-    : strings (static_cast<Array<String>&&> (other.strings))
+    : strings (std::move (other.strings))
 {
 }
 
 StringArray::StringArray (Array<String>&& other) noexcept
-    : strings (static_cast<Array<String>&&> (other))
+    : strings (std::move (other))
 {
 }
 
@@ -85,12 +85,8 @@ StringArray& StringArray::operator= (const StringArray& other)
 
 StringArray& StringArray::operator= (StringArray&& other) noexcept
 {
-    strings = static_cast<Array<String>&&> (other.strings);
+    strings = std::move (other.strings);
     return *this;
-}
-
-StringArray::~StringArray()
-{
 }
 
 bool StringArray::operator== (const StringArray& other) const noexcept
@@ -128,6 +124,11 @@ const String& StringArray::operator[] (int index) const noexcept
 }
 
 String& StringArray::getReference (int index) noexcept
+{
+    return strings.getReference (index);
+}
+
+const String& StringArray::getReference (int index) const noexcept
 {
     return strings.getReference (index);
 }
@@ -300,7 +301,7 @@ String StringArray::joinIntoString (StringRef separator, int start, int numberTo
         return strings.getReference (start);
 
     auto separatorBytes = separator.text.sizeInBytes() - sizeof (String::CharPointerType::CharType);
-    auto bytesNeeded = separatorBytes * (size_t) (last - start - 1);
+    auto bytesNeeded = (size_t) (last - start - 1) * separatorBytes;
 
     for (int i = start; i < last; ++i)
         bytesNeeded += strings.getReference(i).getCharPointer().sizeInBytes() - sizeof (String::CharPointerType::CharType);

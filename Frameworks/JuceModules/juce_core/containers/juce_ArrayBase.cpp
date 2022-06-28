@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2018 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -87,14 +87,14 @@ namespace ArrayBaseTestsHelpers
     };
 }
 
-bool operator== (const ArrayBaseTestsHelpers::TriviallyCopyableType& tct,
-                 const ArrayBaseTestsHelpers::NonTriviallyCopyableType& ntct)
+static bool operator== (const ArrayBaseTestsHelpers::TriviallyCopyableType& tct,
+                        const ArrayBaseTestsHelpers::NonTriviallyCopyableType& ntct)
 {
     return tct.getValue() == ntct.getValue();
 }
 
-bool operator== (const ArrayBaseTestsHelpers::NonTriviallyCopyableType& ntct,
-                 const ArrayBaseTestsHelpers::TriviallyCopyableType& tct)
+static bool operator== (const ArrayBaseTestsHelpers::NonTriviallyCopyableType& ntct,
+                        const ArrayBaseTestsHelpers::TriviallyCopyableType& tct)
 {
     return tct == ntct;
 }
@@ -104,18 +104,20 @@ class ArrayBaseTests  : public UnitTest
     using CopyableType    = ArrayBaseTestsHelpers::TriviallyCopyableType;
     using NoncopyableType = ArrayBaseTestsHelpers::NonTriviallyCopyableType;
 
+   #if ! (defined(__GNUC__) && __GNUC__ < 5 && ! defined(__clang__))
+    static_assert (std::is_trivially_copyable<CopyableType>::value,
+                   "Test TriviallyCopyableType is not trivially copyable");
+    static_assert (! std::is_trivially_copyable<NoncopyableType>::value,
+                   "Test NonTriviallyCopyableType is trivially copyable");
+   #endif
+
 public:
     ArrayBaseTests()
-        : UnitTest ("ArrayBase", "Containers")
+        : UnitTest ("ArrayBase", UnitTestCategories::containers)
     {}
 
     void runTest() override
     {
-        static_assert (std::is_trivially_copyable<CopyableType>::value,
-                       "Test TriviallyCopyableType is not trivially copyable");
-        static_assert (! std::is_trivially_copyable<NoncopyableType>::value,
-                       "Test NonTriviallyCopyableType is trivially copyable");
-
         beginTest ("grow capacity");
         {
             std::vector<CopyableType> referenceContainer;
@@ -302,7 +304,7 @@ public:
             checkEqual (copyableContainer, noncopyableContainer, referenceContainer);
         }
 
-        beginTest ("add array from initilizer list");
+        beginTest ("add array from initializer_list");
         {
             std::vector<CopyableType> referenceContainer;
             ArrayBase<CopyableType,    DummyCriticalSection> copyableContainer;
@@ -500,9 +502,53 @@ public:
                 checkEqual (copyableContainer, noncopyableContainer, referenceContainer);
             }
         }
+
+        beginTest ("After converting move construction, ownership is transferred");
+        {
+            Derived obj;
+            ArrayBase<Derived*, DummyCriticalSection> derived;
+            derived.setAllocatedSize (5);
+            derived.add (&obj);
+
+            ArrayBase<Base*, DummyCriticalSection> base { std::move (derived) };
+
+            expectEquals (base.capacity(), 5);
+            expectEquals (base.size(), 1);
+            expect (base.getFirst() == &obj);
+            expectEquals (derived.capacity(), 0);
+            expectEquals (derived.size(), 0);
+            expect (derived.data() == nullptr);
+        }
+
+        beginTest ("After converting move assignment, ownership is transferred");
+        {
+            Derived obj;
+            ArrayBase<Derived*, DummyCriticalSection> derived;
+            derived.setAllocatedSize (5);
+            derived.add (&obj);
+            ArrayBase<Base*, DummyCriticalSection> base;
+
+            base = std::move (derived);
+
+            expectEquals (base.capacity(), 5);
+            expectEquals (base.size(), 1);
+            expect (base.getFirst() == &obj);
+            expectEquals (derived.capacity(), 0);
+            expectEquals (derived.size(), 0);
+            expect (derived.data() == nullptr);
+        }
     }
 
 private:
+    struct Base
+    {
+        virtual ~Base() = default;
+    };
+
+    struct Derived : Base
+    {
+    };
+
     static void addData (std::vector<CopyableType>& referenceContainer,
                          ArrayBase<CopyableType,    DummyCriticalSection>& copyableContainer,
                          ArrayBase<NoncopyableType, DummyCriticalSection>& NoncopyableContainer,
@@ -516,7 +562,7 @@ private:
         }
     }
 
-    template<typename A, typename B>
+    template <typename A, typename B>
     void checkEqual (const ArrayBase<A, DummyCriticalSection>& a,
                      const ArrayBase<B, DummyCriticalSection>& b)
     {
@@ -526,7 +572,7 @@ private:
             expect (a[i] == b[i]);
     }
 
-    template<typename A, typename B>
+    template <typename A, typename B>
     void checkEqual (ArrayBase<A, DummyCriticalSection>& a,
                      std::vector<B>& b)
     {
@@ -536,7 +582,7 @@ private:
             expect (a[i] == b[(size_t) i]);
     }
 
-    template<typename A, typename B, typename C>
+    template <typename A, typename B, typename C>
     void checkEqual (ArrayBase<A, DummyCriticalSection>& a,
                      ArrayBase<B, DummyCriticalSection>& b,
                      std::vector<C>& c)

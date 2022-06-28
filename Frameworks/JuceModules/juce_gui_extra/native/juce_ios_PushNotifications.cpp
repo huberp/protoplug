@@ -2,17 +2,16 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
 
-   By using JUCE, you agree to the terms of both the JUCE 5 End-User License
-   Agreement and JUCE 5 Privacy Policy (both updated and effective as of the
-   27th April 2017).
+   By using JUCE, you agree to the terms of both the JUCE 6 End-User License
+   Agreement and JUCE Privacy Policy (both effective as of the 16th June 2020).
 
-   End User License Agreement: www.juce.com/juce-5-licence
-   Privacy Policy: www.juce.com/juce-5-privacy-policy
+   End User License Agreement: www.juce.com/juce-6-licence
+   Privacy Policy: www.juce.com/juce-privacy-policy
 
    Or: You may also use this code under the terms of the GPL v3 (see
    www.gnu.org/licenses).
@@ -37,7 +36,7 @@ namespace PushNotificationsDelegateDetails
     {
         if (iOSEarlierThan10)
         {
-            auto* action = [[UIMutableUserNotificationAction alloc] init];
+            auto action = [[UIMutableUserNotificationAction alloc] init];
 
             action.identifier     = juceStringToNS (a.identifier);
             action.title          = juceStringToNS (a.title);
@@ -77,10 +76,10 @@ namespace PushNotificationsDelegateDetails
     {
         if (iOSEarlierThan10)
         {
-            auto* category = [[UIMutableUserNotificationCategory alloc] init];
+            auto category = [[UIMutableUserNotificationCategory alloc] init];
             category.identifier = juceStringToNS (c.identifier);
 
-            auto* actions = [NSMutableArray arrayWithCapacity: (NSUInteger) c.actions.size()];
+            auto actions = [NSMutableArray arrayWithCapacity: (NSUInteger) c.actions.size()];
 
             for (const auto& a : c.actions)
             {
@@ -98,7 +97,7 @@ namespace PushNotificationsDelegateDetails
         else
         {
            #if defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
-            auto* actions = [NSMutableArray arrayWithCapacity: (NSUInteger) c.actions.size()];
+            auto actions = [NSMutableArray arrayWithCapacity: (NSUInteger) c.actions.size()];
 
             for (const auto& a : c.actions)
             {
@@ -119,7 +118,7 @@ namespace PushNotificationsDelegateDetails
     //==============================================================================
     UILocalNotification* juceNotificationToUILocalNotification (const PushNotifications::Notification& n)
     {
-        auto* notification = [[UILocalNotification alloc] init];
+        auto notification = [[UILocalNotification alloc] init];
 
         notification.alertTitle = juceStringToNS (n.title);
         notification.alertBody  = juceStringToNS (n.body);
@@ -144,7 +143,7 @@ namespace PushNotificationsDelegateDetails
     UNNotificationRequest* juceNotificationToUNNotificationRequest (const PushNotifications::Notification& n)
     {
         // content
-        auto* content = [[UNMutableNotificationContent alloc] init];
+        auto content = [[UNMutableNotificationContent alloc] init];
 
         content.title              = juceStringToNS (n.title);
         content.subtitle           = juceStringToNS (n.subtitle);
@@ -174,7 +173,7 @@ namespace PushNotificationsDelegateDetails
         }
 
         // request
-        // each notification on iOS 10 needs to have an identifer, otherwise it will not show up
+        // each notification on iOS 10 needs to have an identifier, otherwise it will not show up
         jassert (n.identifier.isNotEmpty());
         UNNotificationRequest* request = [UNNotificationRequest requestWithIdentifier: juceStringToNS (n.identifier)
                                                                               content: content
@@ -300,7 +299,9 @@ namespace PushNotificationsDelegateDetails
         if (n.fireDate != nil)
         {
             NSDate* dateNow = [NSDate date];
-            notif.triggerIntervalSec = [dateNow timeIntervalSinceDate: n.fireDate];
+            NSDate* fireDate = n.fireDate;
+
+            notif.triggerIntervalSec = [dateNow timeIntervalSinceDate: fireDate];
         }
 
         notif.soundToPlay = URL (nsStringToJuce (n.soundName));
@@ -421,10 +422,10 @@ struct PushNotificationsDelegate
 
         id<UIApplicationDelegate> appDelegate = [[UIApplication sharedApplication] delegate];
 
-        SEL selector = NSSelectorFromString (@"setPushNotificationsDelegateToUse:");
-
-        if ([appDelegate respondsToSelector: selector])
-            [appDelegate performSelector: selector withObject: delegate.get()];
+        JUCE_BEGIN_IGNORE_WARNINGS_GCC_LIKE ("-Wundeclared-selector")
+        if ([appDelegate respondsToSelector: @selector (setPushNotificationsDelegateToUse:)])
+            [appDelegate performSelector: @selector (setPushNotificationsDelegateToUse:) withObject: delegate.get()];
+        JUCE_END_IGNORE_WARNINGS_GCC_LIKE
     }
 
     virtual ~PushNotificationsDelegate() {}
@@ -466,9 +467,9 @@ struct PushNotificationsDelegate
 
 protected:
    #if defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
-    std::unique_ptr<NSObject<UIApplicationDelegate, UNUserNotificationCenterDelegate>, NSObjectDeleter> delegate;
+    NSUniquePtr<NSObject<UIApplicationDelegate, UNUserNotificationCenterDelegate>> delegate;
    #else
-    std::unique_ptr<NSObject<UIApplicationDelegate>, NSObjectDeleter> delegate;
+    NSUniquePtr<NSObject<UIApplicationDelegate>> delegate;
    #endif
 
 private:
@@ -485,19 +486,19 @@ private:
         {
             addIvar<PushNotificationsDelegate*> ("self");
 
-            addMethod (@selector (application:didRegisterUserNotificationSettings:),                                                 didRegisterUserNotificationSettings,                            "v@:@@");
-            addMethod (@selector (application:didRegisterForRemoteNotificationsWithDeviceToken:),                                    registeredForRemoteNotifications,                               "v@:@@");
-            addMethod (@selector (application:didFailToRegisterForRemoteNotificationsWithError:),                                    failedToRegisterForRemoteNotifications,                         "v@:@@");
-            addMethod (@selector (application:didReceiveRemoteNotification:),                                                        didReceiveRemoteNotification,                                   "v@:@@");
-            addMethod (@selector (application:didReceiveRemoteNotification:fetchCompletionHandler:),                                 didReceiveRemoteNotificationFetchCompletionHandler,             "v@:@@@");
-            addMethod (@selector (application:handleActionWithIdentifier:forRemoteNotification:withResponseInfo:completionHandler:), handleActionForRemoteNotificationCompletionHandler,             "v@:@@@@@");
-            addMethod (@selector (application:didReceiveLocalNotification:),                                                         didReceiveLocalNotification,                                    "v@:@@");
-            addMethod (@selector (application:handleActionWithIdentifier:forLocalNotification:completionHandler:),                   handleActionForLocalNotificationCompletionHandler,              "v@:@@@@");
-            addMethod (@selector (application:handleActionWithIdentifier:forLocalNotification:withResponseInfo:completionHandler:),  handleActionForLocalNotificationWithResponseCompletionHandler,  "v@:@@@@@");
+            addMethod (@selector (application:didRegisterUserNotificationSettings:),                                                 didRegisterUserNotificationSettings);
+            addMethod (@selector (application:didRegisterForRemoteNotificationsWithDeviceToken:),                                    registeredForRemoteNotifications);
+            addMethod (@selector (application:didFailToRegisterForRemoteNotificationsWithError:),                                    failedToRegisterForRemoteNotifications);
+            addMethod (@selector (application:didReceiveRemoteNotification:),                                                        didReceiveRemoteNotification);
+            addMethod (@selector (application:didReceiveRemoteNotification:fetchCompletionHandler:),                                 didReceiveRemoteNotificationFetchCompletionHandler);
+            addMethod (@selector (application:handleActionWithIdentifier:forRemoteNotification:withResponseInfo:completionHandler:), handleActionForRemoteNotificationCompletionHandler);
+            addMethod (@selector (application:didReceiveLocalNotification:),                                                         didReceiveLocalNotification);
+            addMethod (@selector (application:handleActionWithIdentifier:forLocalNotification:completionHandler:),                   handleActionForLocalNotificationCompletionHandler);
+            addMethod (@selector (application:handleActionWithIdentifier:forLocalNotification:withResponseInfo:completionHandler:),  handleActionForLocalNotificationWithResponseCompletionHandler);
 
            #if defined (__IPHONE_10_0) && __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
-            addMethod (@selector (userNotificationCenter:willPresentNotification:withCompletionHandler:),                            willPresentNotificationWithCompletionHandler,                   "v@:@@@");
-            addMethod (@selector (userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:),                     didReceiveNotificationResponseWithCompletionHandler,            "v@:@@@");
+            addMethod (@selector (userNotificationCenter:willPresentNotification:withCompletionHandler:),                            willPresentNotificationWithCompletionHandler);
+            addMethod (@selector (userNotificationCenter:didReceiveNotificationResponse:withCompletionHandler:),                     didReceiveNotificationResponseWithCompletionHandler);
            #endif
 
             registerClass();
@@ -585,7 +586,7 @@ struct PushNotifications::Pimpl : private PushNotificationsDelegate
     {
         settings = settingsToUse;
 
-        auto* categories = [NSMutableSet setWithCapacity: (NSUInteger) settings.categories.size()];
+        auto categories = [NSMutableSet setWithCapacity: (NSUInteger) settings.categories.size()];
 
         if (iOSEarlierThan10)
         {
@@ -841,12 +842,22 @@ struct PushNotifications::Pimpl : private PushNotificationsDelegate
 
     void registeredForRemoteNotifications (NSData* deviceTokenToUse) override
     {
-        NSString* deviceTokenString = [[[[deviceTokenToUse description]
-                                          stringByReplacingOccurrencesOfString: nsStringLiteral ("<") withString: nsStringLiteral ("")]
-                                          stringByReplacingOccurrencesOfString: nsStringLiteral (">") withString: nsStringLiteral ("")]
-                                          stringByReplacingOccurrencesOfString: nsStringLiteral (" ") withString: nsStringLiteral ("")];
+        deviceToken = [deviceTokenToUse]() -> String
+        {
+            auto length = deviceTokenToUse.length;
 
-        deviceToken = nsStringToJuce (deviceTokenString);
+            if (auto* buffer = (const unsigned char*) deviceTokenToUse.bytes)
+            {
+                NSMutableString* hexString = [NSMutableString stringWithCapacity: (length * 2)];
+
+                for (NSUInteger i = 0; i < length; ++i)
+                    [hexString appendFormat:@"%02x", buffer[i]];
+
+                return nsStringToJuce ([hexString copy]);
+            }
+
+            return {};
+        }();
 
         initialised = true;
 

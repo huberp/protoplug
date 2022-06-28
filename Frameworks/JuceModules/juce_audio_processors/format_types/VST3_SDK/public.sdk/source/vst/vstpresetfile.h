@@ -8,28 +8,28 @@
 //
 //-----------------------------------------------------------------------------
 // LICENSE
-// (c) 2018, Steinberg Media Technologies GmbH, All Rights Reserved
+// (c) 2021, Steinberg Media Technologies GmbH, All Rights Reserved
 //-----------------------------------------------------------------------------
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-//
-//   * Redistributions of source code must retain the above copyright notice,
+// 
+//   * Redistributions of source code must retain the above copyright notice, 
 //     this list of conditions and the following disclaimer.
 //   * Redistributions in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
+//     this list of conditions and the following disclaimer in the documentation 
 //     and/or other materials provided with the distribution.
 //   * Neither the name of the Steinberg Media Technologies nor the names of its
-//     contributors may be used to endorse or promote products derived from this
+//     contributors may be used to endorse or promote products derived from this 
 //     software without specific prior written permission.
-//
+// 
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT,
-// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED 
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. 
+// IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+// INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, 
+// BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE 
 // OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE  OF THIS SOFTWARE, EVEN IF ADVISED
 // OF THE POSSIBILITY OF SUCH DAMAGE.
 //-----------------------------------------------------------------------------
@@ -47,7 +47,7 @@
 #include <vector>
 
 //------------------------------------------------------------------------
-/*
+/* 
 	VST 3 Preset File Format Definition
    ===================================
 
@@ -55,7 +55,7 @@
     | HEADER                    |
     | header id ('VST3')        |       4 Bytes
     | version                   |       4 Bytes (int32)
-    | ASCII-encoded class id    |       32 Bytes
+    | ASCII-encoded class id    |       32 Bytes 
  +--| offset to chunk list      |       8 Bytes (int64)
  |  +---------------------------+
  |  | DATA AREA                 |<-+
@@ -81,7 +81,7 @@ namespace Steinberg {
 namespace Vst {
 
 //------------------------------------------------------------------------
-typedef char ChunkID[4];
+using ChunkID = char[4];
 
 //------------------------------------------------------------------------
 enum ChunkType
@@ -107,8 +107,8 @@ inline bool isEqualID (const ChunkID id1, const ChunkID id2)
 //------------------------------------------------------------------------
 /** Handler for a VST 3 Preset File.
 \ingroup vstClasses
-\see \ref presetformat */
-//------------------------------------------------------------------------
+\see \ref presetformat
+*/
 class PresetFile
 {
 public:
@@ -143,14 +143,14 @@ public:
 	bool readMetaInfo (char* xmlBuffer, int32& size);
 
 	/** Writes the meta XML info, -1 means null-terminated, forceWriting to true will force to rewrite the XML Info when the chunk already exists. */
-	bool writeMetaInfo (const char* xmlBuffer, int32 size = -1, bool forceWriting = false);
+	bool writeMetaInfo (const char* xmlBuffer, int32 size = -1, bool forceWriting = false); 
 	bool prepareMetaInfoUpdate ();	///< checks if meta info chunk is the last one and jump to correct position.
 
 	/** Writes a given data of a given size as "which" chunk type. */
 	bool writeChunk (const void* data, int32 size, ChunkType which = kComponentState);
 
 	//-------------------------------------------------------------
-	// for storing and restoring the whole Plug-in state (component and controller states)
+	// for storing and restoring the whole plug-in state (component and controller states)
 	bool seekToComponentState ();							///< Seeks to the begin of the Component State.
 	bool storeComponentState (IComponent* component);		///< Stores the component state (only one time).
 	bool storeComponentState (IBStream* componentStream);	///< Stores the component state from stream (only one time).
@@ -165,10 +165,11 @@ public:
 
 	//--- ----------------------------------------------------------
 	/** Store program data or unit data from stream (including the header chunk).
+	 \param inStream 
 	 \param listID could be ProgramListID or UnitID. */
 	bool storeProgramData (IBStream* inStream, ProgramListID listID);
 
-	//---when Plug-in uses IProgramListData-----------------------
+	//---when plug-in uses IProgramListData-----------------------
 	/** Stores a IProgramListData with a given identifier and index (including the header chunk). */
 	bool storeProgramData (IProgramListData* programListData, ProgramListID programListID,
 	                       int32 programIndex);
@@ -176,14 +177,14 @@ public:
 	bool restoreProgramData (IProgramListData* programListData, ProgramListID* programListID = nullptr,
 	                         int32 programIndex = 0);
 
-	//---when Plug-in uses IUnitData------------------------------
+	//---when plug-in uses IUnitData------------------------------
 	/** Stores a IUnitData with a given unitID (including the header chunk). */
 	bool storeProgramData (IUnitData* unitData, UnitID unitID);
 	/** Restores a IUnitData with a given unitID (optional). */
 	bool restoreProgramData (IUnitData* unitData, UnitID* unitID = nullptr);
 
 	//--- ----------------------------------------------------------
-	/** for keeping the Controller part in sync concerning preset data stream, unitProgramListID
+	/** for keeping the controller part in sync concerning preset data stream, unitProgramListID
 	 * could be ProgramListID or UnitID. */
 	bool restoreProgramData (IUnitInfo* unitInfo, int32 unitProgramListID, int32 programIndex = -1);
 
@@ -226,8 +227,8 @@ protected:
 };
 
 //------------------------------------------------------------------------
-/** Stream implementation for a file using stdio. */
-//------------------------------------------------------------------------
+/** Stream implementation for a file using stdio. 
+*/
 class FileStream: public IBStream
 {
 public:
@@ -252,15 +253,15 @@ protected:
 };
 
 //------------------------------------------------------------------------
-/** Stream representing a Read-Only subsection of its source stream. */
-//------------------------------------------------------------------------
+/** Stream representing a Read-Only subsection of its source stream.
+*/
 class ReadOnlyBStream: public IBStream
 {
 public:
 //------------------------------------------------------------------------
 	 ReadOnlyBStream (IBStream* sourceStream, TSize sourceOffset, TSize sectionSize);
 	 virtual ~ReadOnlyBStream ();
-
+	 
 	 //---from FUnknown------------------
 	 DECLARE_FUNKNOWN_METHODS
 
@@ -279,8 +280,8 @@ protected:
 };
 
 //------------------------------------------------------------------------
-/** Stream implementation for a memory buffer. */
-//------------------------------------------------------------------------
+/** Stream implementation for a memory buffer. 
+*/
 class BufferStream : public IBStream
 {
 public:

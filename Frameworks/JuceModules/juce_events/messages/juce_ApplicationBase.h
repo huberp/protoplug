@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -107,9 +107,11 @@ public:
         If your application class returns true for this, more than one instance is
         permitted to run (except on the Mac where this isn't possible).
 
-        If it's false, the second instance won't start, but it you will still get a
+        If it's false, the second instance won't start, but you will still get a
         callback to anotherInstanceStarted() to tell you about this - which
         gives you a chance to react to what the user was trying to do.
+
+        @see anotherInstanceStarted
     */
     virtual bool moreThanOneInstanceAllowed() = 0;
 
@@ -151,6 +153,9 @@ public:
     /** Indicates that the user has tried to start up another instance of the app.
 
         This will get called even if moreThanOneInstanceAllowed() is false.
+        It is currently only implemented on Windows and Mac.
+
+        @see moreThanOneInstanceAllowed
     */
     virtual void anotherInstanceStarted (const String& commandLine) = 0;
 
@@ -201,10 +206,17 @@ public:
     virtual void memoryWarningReceived()     { jassertfalse; }
 
     //==============================================================================
-    /** Override this method to be informed when the back button is pressed on a device.
+    /** This will be called when the back button on a device is pressed. The return value
+        should be used to indicate whether the back button event has been handled by
+        the application, for example if you want to implement custom navigation instead
+        of the standard behaviour on Android.
+
         This is currently only implemented on Android devices.
+
+        @returns  true if the event has been handled, or false if the default OS
+                  behaviour should happen
      */
-    virtual void backButtonPressed() {}
+    virtual bool backButtonPressed() { return false; }
 
     //==============================================================================
     /** Signals that the main message loop should stop and the application should terminate.
@@ -297,7 +309,7 @@ private:
 
 
 //==============================================================================
-#if JUCE_CATCH_UNHANDLED_EXCEPTIONS || defined (DOXYGEN)
+#if JUCE_CATCH_UNHANDLED_EXCEPTIONS || DOXYGEN
 
  /** The JUCE_TRY/JUCE_CATCH_EXCEPTION wrappers can be used to pass any uncaught exceptions to
      the JUCEApplicationBase::sendUnhandledException() method.

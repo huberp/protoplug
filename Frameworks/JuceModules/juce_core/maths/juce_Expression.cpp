@@ -2,7 +2,7 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
@@ -133,7 +133,7 @@ struct Expression::Helpers
     class BinaryTerm  : public Term
     {
     public:
-        BinaryTerm (TermPtr l, TermPtr r) : left (static_cast<TermPtr&&> (l)), right (static_cast<TermPtr&&> (r))
+        BinaryTerm (TermPtr l, TermPtr r) : left (std::move (l)), right (std::move (r))
         {
             jassert (left != nullptr && right != nullptr);
         }
@@ -145,7 +145,7 @@ struct Expression::Helpers
 
         Type getType() const noexcept       { return operatorType; }
         int getNumInputs() const            { return 2; }
-        Term* getInput (int index) const    { return index == 0 ? left.get() : (index == 1 ? right.get() : 0); }
+        Term* getInput (int index) const    { return index == 0 ? left.get() : (index == 1 ? right.get() : nullptr); }
 
         virtual double performFunction (double left, double right) const = 0;
         virtual void writeOperator (String& dest) const = 0;
@@ -571,7 +571,11 @@ struct Expression::Helpers
 
     static Constant* findTermToAdjust (Term* const term, const bool mustBeFlagged)
     {
-        jassert (term != nullptr);
+        if (term == nullptr)
+        {
+            jassertfalse;
+            return nullptr;
+        }
 
         if (term->getType() == constantType)
         {
@@ -681,7 +685,7 @@ struct Expression::Helpers
         }
 
         //==============================================================================
-        static inline bool isDecimalDigit (const juce_wchar c) noexcept
+        static bool isDecimalDigit (const juce_wchar c) noexcept
         {
             return c >= '0' && c <= '9';
         }
@@ -699,7 +703,7 @@ struct Expression::Helpers
 
         bool readOperator (const char* ops, char* const opType = nullptr) noexcept
         {
-            text = text.findEndOfWhitespace();
+            text.incrementToEndOfWhitespace();
 
             while (*ops != 0)
             {
@@ -719,7 +723,7 @@ struct Expression::Helpers
 
         bool readIdentifier (String& identifier) noexcept
         {
-            text = text.findEndOfWhitespace();
+            text.incrementToEndOfWhitespace();
             auto t = text;
             int numChars = 0;
 
@@ -747,21 +751,21 @@ struct Expression::Helpers
 
         Term* readNumber() noexcept
         {
-            text = text.findEndOfWhitespace();
+            text.incrementToEndOfWhitespace();
             auto t = text;
             bool isResolutionTarget = (*t == '@');
 
             if (isResolutionTarget)
             {
                 ++t;
-                t = t.findEndOfWhitespace();
+                t.incrementToEndOfWhitespace();
                 text = t;
             }
 
             if (*t == '-')
             {
                 ++t;
-                t = t.findEndOfWhitespace();
+                t.incrementToEndOfWhitespace();
             }
 
             if (isDecimalDigit (*t) || (*t == '.' && isDecimalDigit (t[1])))
@@ -951,13 +955,13 @@ Expression& Expression::operator= (const Expression& other)
 }
 
 Expression::Expression (Expression&& other) noexcept
-    : term (static_cast<ReferenceCountedObjectPtr<Term>&&> (other.term))
+    : term (std::move (other.term))
 {
 }
 
 Expression& Expression::operator= (Expression&& other) noexcept
 {
-    term = static_cast<ReferenceCountedObjectPtr<Term>&&> (other.term);
+    term = std::move (other.term);
     return *this;
 }
 

@@ -9,7 +9,7 @@
 //-----------------------------------------------------------------------------
 // This file is part of a Steinberg SDK. It is subject to the license terms
 // in the LICENSE file found in the top-level directory of this distribution
-// and at www.steinberg.net/sdklicenses.
+// and at www.steinberg.net/sdklicenses. 
 // No part of the SDK, including this file, may be copied, modified, propagated,
 // or distributed except according to the terms contained in the LICENSE file.
 //-----------------------------------------------------------------------------
@@ -32,7 +32,7 @@ namespace Vst {
 //------------------------------------------------------------------------
 /** RepresentationInfo is the structure describing a representation
 This structure is used in the function \see IXmlRepresentationController::getXmlRepresentationStream.
-\see IXmlRepresentationController
+\see IXmlRepresentationController 
 */
 struct RepresentationInfo
 {
@@ -41,10 +41,10 @@ struct RepresentationInfo
 		memset (vendor, 0, kNameSize);
 		memset (name, 0, kNameSize);
 		memset (version, 0, kNameSize);
-		memset (host, 0, kNameSize);
+		memset (host, 0, kNameSize); 
 	}
-
-	RepresentationInfo (char8* _vendor, char8* _name = 0, char8* _version = 0, char8* _host = 0)
+	
+	RepresentationInfo (char8* _vendor, char8* _name = nullptr, char8* _version = nullptr, char8* _host = nullptr)
 	{
 		memset (vendor, 0, kNameSize);
 		if (_vendor)
@@ -73,29 +73,29 @@ struct RepresentationInfo
 
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
-/** Extended Plug-in interface IEditController for a component.
+/** Extended plug-in interface IEditController for a component: Vst::IXmlRepresentationController
 \ingroup vstIPlug vst350
 - [plug imp]
 - [extends IEditController]
 - [released: 3.5.0]
 - [optional]
 
-A Representation based on XML is a way to export and structure, group Plug-ins parameters for a specific remote (could be hardware or software rack (like quickcontrols)).
+A representation based on XML is a way to export, structure, and group plug-ins parameters for a specific remote (hardware or software rack (such as quick controls)).
 \n
-It allows to describe more precisely each parameter (what is the best matching to a knob, different titles lengths matching limited remote display,...).\n See an \ref Example.
+It allows to describe each parameter more precisely (what is the best matching to a knob, different title lengths matching limited remote display,...).\n See an \ref Example.
  \n\n
-- A Representation is composed of Pages (this means that to see all exported parameters the user has to navigate through the pages).
-- A Page is composed of Cells (for example 8 Cells per page).
-- A Cell is composed of Layers (for example a cell could have a knob, a display and a button which are 3 Layers).
-- A Layer is associated to a Plug-in parameter using the ParameterID as identifier:
-	- it could be a knob with a display for Title and/or value, this display uses the same parameterId, but it could an another one.
-	- Switch
-	- link which allows to jump directly to a subpage (an another page)
+- A representation is composed of pages (this means that to see all exported parameters, the user has to navigate through the pages).
+- A page is composed of cells (for example 8 cells per page).
+- A cell is composed of layers (for example a cell could have a knob, a display, and a button, which means 3 layers).
+- A layer is associated to a plug-in parameter using the ParameterID as identifier:
+	- it could be a knob with a display for title and/or value, this display uses the same parameterId, but it could an another one.
+	- switch
+	- link which allows to jump directly to a subpage (another page) 
 	- more... See Vst::LayerType
 .
 
 \n
-This Representation is implemented as XML text following the Document Type Definition (DTD): http://dtd.steinberg.net/VST-Remote-1.1.dtd
+This representation is implemented as XML text following the Document Type Definition (DTD): http://dtd.steinberg.net/VST-Remote-1.1.dtd
 
 \section Example
 Here an example of what should be passed in the stream of getXmlRepresentationStream:
@@ -107,7 +107,7 @@ Here an example of what should be passed in the stream of getXmlRepresentationSt
 	<plugin classID="341FC5898AAA46A7A506BC0799E882AE" name="Chorus" vendor="Steinberg Media Technologies" />
 	<originator>My name</originator>
 	<date>2010-12-31</date>
-	<comment>This is an example for 4 Cells per Page for the Remote named ProductRemote
+	<comment>This is an example for 4 Cells per Page for the Remote named ProductRemote 
 	         from company HardwareCompany.</comment>
 
 	<!-- ===================================== -->
@@ -177,19 +177,18 @@ Here an example of what should be passed in the stream of getXmlRepresentationSt
 </vstXML>
 \endcode
 */
-//------------------------------------------------------------------------
-class IXmlRepresentationController: public FUnknown
+class IXmlRepresentationController : public FUnknown
 {
 public:
 	/** Retrieves a stream containing a XmlRepresentation for a wanted representation info */
-	virtual tresult PLUGIN_API getXmlRepresentationStream (RepresentationInfo& info /*in*/, IBStream* stream /*out*/) = 0;
+	virtual tresult PLUGIN_API getXmlRepresentationStream (RepresentationInfo& info /*in*/,
+	                                                       IBStream* stream /*out*/) = 0;
 
-	//------------------------------------------------------------------------
+//------------------------------------------------------------------------
 	static const FUID iid;
 };
 
 DECLARE_CLASS_IID (IXmlRepresentationController, 0xA81A0471, 0x48C34DC4, 0xAC30C9E1, 0x3C8393D5)
-
 
 //------------------------------------------------------------------------
 /** Defines for XML representation Tags and Attributes */
@@ -253,11 +252,10 @@ DECLARE_CLASS_IID (IXmlRepresentationController, 0xA81A0471, 0x48C34DC4, 0xAC30C
 #define QUICK_CONTROL_8_CELLS	"Quick Controls 8 Cells"
 
 //------------------------------------------------------------------------
-/** Layer Types used in a VST XML Representation */
-//------------------------------------------------------------------------
+/** Layer Types used in a VST XML Representation */ 
 namespace LayerType
 {
-	enum
+	enum 
 	{
 		kKnob = 0, 		///< a knob (encoder or not)
 		kPressedKnob,  	///< a knob which is used by pressing and turning
@@ -280,13 +278,12 @@ namespace LayerType
 		,"link"
 		,"display"
 		,"fader"
-		,0
+		,nullptr
 	};
 };
 
 //------------------------------------------------------------------------
-/** Curve Types used in a VST XML Representation */
-//------------------------------------------------------------------------
+/** Curve Types used in a VST XML Representation */ 
 namespace CurveType
 {
 	const CString kSegment		= "segment";	///<
@@ -294,8 +291,7 @@ namespace CurveType
 };
 
 //------------------------------------------------------------------------
-/** Attributes used to defined a Layer in a VST XML Representation */
-//------------------------------------------------------------------------
+/** Attributes used to defined a Layer in a VST XML Representation */ 
 namespace Attributes
 {
 	const CString kStyle		= ATTR_STYLE;			///< string attribute : See AttributesStyle for available string value
@@ -307,8 +303,7 @@ namespace Attributes
 };
 
 //------------------------------------------------------------------------
-/** Attributes Function used to defined the function of a Layer in a VST XML Representation */
-//------------------------------------------------------------------------
+/** Attributes Function used to defined the function of a Layer in a VST XML Representation */ 
 namespace AttributesFunction
 {
 	/// Global Style
@@ -329,8 +324,7 @@ namespace AttributesFunction
 };
 
 //------------------------------------------------------------------------
-/** Attributes Style associated a specific Layer Type in a VST XML Representation */
-//------------------------------------------------------------------------
+/** Attributes Style associated a specific Layer Type in a VST XML Representation */ 
 namespace AttributesStyle
 {
 	/// Global Style
@@ -350,18 +344,16 @@ namespace AttributesStyle
 	const CString kSwitchPushDecLoopedStyle	= "pushDecLooped";	///< Push will decrement the value. When the min is reached it will restart with max.
 	const CString kSwitchPushIncStyle	= "pushInc";	///< Increment after each press (delta depends of the curve).
 	const CString kSwitchPushDecStyle	= "pushDec";	///< Decrement after each press (delta depends of the curve).
-	const CString kSwitchLatchStyle		= "latch";		///< Each push-release will change the value between min and max.
+	const CString kSwitchLatchStyle		= "latch";		///< Each push-release will change the value between min and max. 
 														///< A timeout between push and release could be used to simulate a push style (if timeout is reached).
 };
 
 //------------------------------------------------------------------------
-/** Attributes Flags defining a Layer in a VST XML Representation */
-//------------------------------------------------------------------------
+/** Attributes Flags defining a Layer in a VST XML Representation */ 
 namespace AttributesFlags
 {
-	const CString kHideableFlag			= "hideable";	///< the associated layer marked as hideable allows a remote to hide or make it not usable a parameter when the associated value is inactive
+	const CString kHideableFlag			= "hideable";	///< the associated layer marked as hideable allows a remote to hide or make it not usable a parameter when the associated value is inactive 
 };
-
 
 //------------------------------------------------------------------------
 } // namespace Vst

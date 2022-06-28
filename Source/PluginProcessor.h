@@ -1,6 +1,7 @@
 #pragma once
 #include "../JuceLibraryCode/JuceHeader.h"
 #include "LuaLink.h"
+#include "ProtoplugUtil.h"
 
 
 #define NPARAMS 127
@@ -41,7 +42,7 @@ public:
 	int getNumPrograms()									{ return 1; }
 	int getCurrentProgram()									{ return 1; }
 	void setCurrentProgram (int /*index*/)					{ }
-	const String getProgramName (int /*index*/)				{ return String::empty; }
+	const String getProgramName (int /*index*/)				{ return ProtoplugUtil::EmptyString; }
 	void changeProgramName (int /*index*/, const String& /*newName*/)	{ }
 	void prepareToPlay (double /*sampleRate*/, int /*samplesPerBlock*/)	{ }
 	void releaseResources()	{ }

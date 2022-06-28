@@ -1,4 +1,5 @@
 #include "LuaLink.h"
+#include "ProtoplugUtil.h"
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 #include "ProtoplugDir.h"
@@ -319,9 +320,9 @@ String LuaLink::callStringOverride(const char *fname, ...)
 	int numArgs = startVarargOverride(fname, args);
     va_end(args);
 	if (numArgs<0)
-		return String::empty; // state or function does not exist
+		return ProtoplugUtil::EmptyString; // state or function does not exist
 	if (safepcall (fname, numArgs, 1, 0))
-		return String::empty; // function crashed
+		return ProtoplugUtil::EmptyString; // function crashed
 	return safetostring();
 }
 
@@ -354,7 +355,7 @@ String LuaLink::safetostring()
 {
 	if (!ls->isstring(-1)) {
 		ls->settop(0);
-		return String::empty; // there is no string
+		return ProtoplugUtil::EmptyString; // there is no string
 	}
 	String ret = ls->tostring(-1);
 	ls->settop(0);
@@ -392,6 +393,7 @@ double LuaLink::getTailLengthSeconds()
 
 void LuaLink::processBlock (AudioSampleBuffer& buffer, MidiBuffer& midiMessages, AudioPlayHead* ph)
 {
+	//midiMessages.clear();
 	bool res = callVoidOverride("plugin_processBlock"	, LUA_TNUMBER, (double)buffer.getNumSamples(),
 									LUA_TLIGHTUSERDATA, buffer.getArrayOfReadPointers(),
 									LUA_TLIGHTUSERDATA, &midiMessages,

@@ -2,17 +2,16 @@
   ==============================================================================
 
    This file is part of the JUCE library.
-   Copyright (c) 2017 - ROLI Ltd.
+   Copyright (c) 2020 - Raw Material Software Limited
 
    JUCE is an open source library subject to commercial or open-source
    licensing.
 
-   By using JUCE, you agree to the terms of both the JUCE 5 End-User License
-   Agreement and JUCE 5 Privacy Policy (both updated and effective as of the
-   27th April 2017).
+   By using JUCE, you agree to the terms of both the JUCE 6 End-User License
+   Agreement and JUCE Privacy Policy (both effective as of the 16th June 2020).
 
-   End User License Agreement: www.juce.com/juce-5-licence
-   Privacy Policy: www.juce.com/juce-5-privacy-policy
+   End User License Agreement: www.juce.com/juce-6-licence
+   Privacy Policy: www.juce.com/juce-privacy-policy
 
    Or: You may also use this code under the terms of the GPL v3 (see
    www.gnu.org/licenses).
@@ -97,12 +96,12 @@ namespace TTFNameExtractor
     {
         input.setPosition (directoryOffset);
 
-        NamingTable namingTable = { 0 };
+        NamingTable namingTable = {};
         input.read (&namingTable, sizeof (namingTable));
 
         for (int i = 0; i < (int) ByteOrder::swapIfLittleEndian (namingTable.numberOfNameRecords); ++i)
         {
-            NameRecord nameRecord = { 0 };
+            NameRecord nameRecord = {};
             input.read (&nameRecord, sizeof (nameRecord));
 
             if (ByteOrder::swapIfLittleEndian (nameRecord.nameID) == 4)
@@ -120,7 +119,7 @@ namespace TTFNameExtractor
 
     static String getTypefaceNameFromFile (MemoryInputStream& input)
     {
-        OffsetTable offsetTable = { 0 };
+        OffsetTable offsetTable = {};
         input.read (&offsetTable, sizeof (offsetTable));
 
         for (int i = 0; i < (int) ByteOrder::swapIfLittleEndian (offsetTable.numTables); ++i)
@@ -154,7 +153,7 @@ namespace FontEnumerators
     {
         if (lpelfe != nullptr && (type & RASTER_FONTTYPE) == 0)
         {
-            LOGFONTW lf = { 0 };
+            LOGFONTW lf = {};
             lf.lfWeight = FW_DONTCARE;
             lf.lfOutPrecision = OUT_OUTLINE_PRECIS;
             lf.lfQuality = DEFAULT_QUALITY;
@@ -165,7 +164,7 @@ namespace FontEnumerators
             const String fontName (lpelfe->elfLogFont.lfFaceName);
             fontName.copyToUTF16 (lf.lfFaceName, sizeof (lf.lfFaceName));
 
-            auto dc = CreateCompatibleDC (0);
+            auto dc = CreateCompatibleDC (nullptr);
             EnumFontFamiliesEx (dc, &lf, (FONTENUMPROCW) &fontEnum2, lParam, 0);
             DeleteDC (dc);
         }
@@ -198,10 +197,10 @@ StringArray Font::findAllTypefaceNames()
     else
    #endif
     {
-        auto dc = CreateCompatibleDC (0);
+        auto dc = CreateCompatibleDC (nullptr);
 
         {
-            LOGFONTW lf = { 0 };
+            LOGFONTW lf = {};
             lf.lfWeight = FW_DONTCARE;
             lf.lfOutPrecision = OUT_OUTLINE_PRECIS;
             lf.lfQuality = DEFAULT_QUALITY;
@@ -236,6 +235,7 @@ StringArray Font::findAllTypefaceStyles (const String& family)
         BOOL fontFound = false;
         uint32 fontIndex = 0;
         auto hr = factories->systemFonts->FindFamilyName (family.toWideCharPointer(), &fontIndex, &fontFound);
+        ignoreUnused (hr);
 
         if (! fontFound)
             fontIndex = 0;
@@ -301,7 +301,7 @@ Typeface::Ptr Font::getDefaultTypefaceForFont (const Font& font)
     static DefaultFontNames defaultNames;
 
     Font newFont (font);
-    auto& faceName = font.getTypefaceName();
+    auto faceName = font.getTypefaceName();
 
     if (faceName == getDefaultSansSerifFontName())       newFont.setTypefaceName (defaultNames.defaultSans);
     else if (faceName == getDefaultSerifFontName())      newFont.setTypefaceName (defaultNames.defaultSerif);
@@ -340,10 +340,10 @@ public:
         SelectObject (dc, previousFontH); // Replacing the previous font before deleting the DC avoids a warning in BoundsChecker
         DeleteDC (dc);
 
-        if (fontH != 0)
+        if (fontH != nullptr)
             DeleteObject (fontH);
 
-        if (memoryFont != 0)
+        if (memoryFont != nullptr)
             RemoveFontMemResourceEx (memoryFont);
     }
 
@@ -400,17 +400,17 @@ public:
         GLYPHMETRICS gm;
         // (although GetGlyphOutline returns a DWORD, it may be -1 on failure, so treat it as signed int..)
         auto bufSize = (int) GetGlyphOutline (dc, (UINT) glyphNumber, GGO_NATIVE | GGO_GLYPH_INDEX,
-                                              &gm, 0, 0, &identityMatrix);
+                                              &gm, 0, nullptr, &identityMatrix);
 
         if (bufSize > 0)
         {
             HeapBlock<char> data (bufSize);
             GetGlyphOutline (dc, (UINT) glyphNumber, GGO_NATIVE | GGO_GLYPH_INDEX, &gm,
-                             bufSize, data, &identityMatrix);
+                             (DWORD) bufSize, data, &identityMatrix);
 
             auto pheader = reinterpret_cast<const TTPOLYGONHEADER*> (data.getData());
 
-            auto scaleX = 1.0f / tm.tmHeight;
+            auto scaleX = 1.0f / (float) tm.tmHeight;
             auto scaleY = -scaleX;
 
             while ((char*) pheader < data + bufSize)
@@ -418,7 +418,7 @@ public:
                 glyphPath.startNewSubPath (scaleX * pheader->pfxStart.x.value,
                                            scaleY * pheader->pfxStart.y.value);
 
-                auto curve = (const TTPOLYCURVE*) ((const char*) pheader + sizeof (TTPOLYGONHEADER));
+                auto curve = unalignedPointerCast<const TTPOLYCURVE*> ((const char*) pheader + sizeof (TTPOLYGONHEADER));
                 auto curveEnd = ((const char*) pheader) + pheader->cb;
 
                 while ((const char*) curve < curveEnd)
@@ -451,7 +451,7 @@ public:
                     curve = (const TTPOLYCURVE*) &(curve->apfx [curve->cpfx]);
                 }
 
-                pheader = (const TTPOLYGONHEADER*) curve;
+                pheader = unalignedPointerCast<const TTPOLYGONHEADER*> (curve);
 
                 glyphPath.closeSubPath();
             }
@@ -464,37 +464,24 @@ private:
     static const MAT2 identityMatrix;
     HFONT fontH = {};
     HGDIOBJ previousFontH = {};
-    HDC dc { CreateCompatibleDC (0) };
+    HDC dc { CreateCompatibleDC (nullptr) };
     TEXTMETRIC tm;
     HANDLE memoryFont = {};
     float ascent = 1.0f, heightToPointsFactor = 1.0f;
     int defaultGlyph = -1, heightInPoints = 0;
+    std::unordered_map<uint64, float> kerningPairs;
 
-    struct KerningPair
+    static uint64 kerningPairIndex (int glyph1, int glyph2)
     {
-        int glyph1, glyph2;
-        float kerning;
-
-        bool operator== (const KerningPair& other) const noexcept
-        {
-            return glyph1 == other.glyph1 && glyph2 == other.glyph2;
-        }
-
-        bool operator< (const KerningPair& other) const noexcept
-        {
-            return glyph1 < other.glyph1
-                    || (glyph1 == other.glyph1 && glyph2 < other.glyph2);
-        }
-    };
-
-    SortedSet<KerningPair> kerningPairs;
+        return (((uint64) (uint32) glyph1) << 32) | (uint64) (uint32) glyph2;
+    }
 
     void loadFont()
     {
         SetMapperFlags (dc, 0);
         SetMapMode (dc, MM_TEXT);
 
-        LOGFONTW lf = { 0 };
+        LOGFONTW lf = {};
         lf.lfCharSet = DEFAULT_CHARSET;
         lf.lfClipPrecision = CLIP_DEFAULT_PRECIS;
         lf.lfOutPrecision = OUT_OUTLINE_PRECIS;
@@ -507,17 +494,17 @@ private:
 
         auto standardSizedFont = CreateFontIndirect (&lf);
 
-        if (standardSizedFont != 0)
+        if (standardSizedFont != nullptr)
         {
-            if ((previousFontH = SelectObject (dc, standardSizedFont)) != 0)
+            if ((previousFontH = SelectObject (dc, standardSizedFont)) != nullptr)
             {
                 fontH = standardSizedFont;
                 OUTLINETEXTMETRIC otm;
 
                 if (GetOutlineTextMetrics (dc, sizeof (otm), &otm) != 0)
                 {
-                    heightInPoints = otm.otmEMSquare;
-                    lf.lfHeight = -(int) heightInPoints;
+                    heightInPoints = (int) otm.otmEMSquare;
+                    lf.lfHeight = -heightInPoints;
                     fontH = CreateFontIndirect (&lf);
 
                     SelectObject (dc, fontH);
@@ -528,41 +515,42 @@ private:
 
         if (GetTextMetrics (dc, &tm))
         {
-            auto dpi = (GetDeviceCaps (dc, LOGPIXELSX) + GetDeviceCaps (dc, LOGPIXELSY)) / 2.0f;
-            heightToPointsFactor = (dpi / GetDeviceCaps (dc, LOGPIXELSY)) * heightInPoints / (float) tm.tmHeight;
-            ascent = tm.tmAscent / (float) tm.tmHeight;
-            defaultGlyph = getGlyphForChar (dc, tm.tmDefaultChar);
-            createKerningPairs (dc, (float) tm.tmHeight);
+            auto dpi = (float) (GetDeviceCaps (dc, LOGPIXELSX) + GetDeviceCaps (dc, LOGPIXELSY)) / 2.0f;
+            heightToPointsFactor = (dpi / (float) GetDeviceCaps (dc, LOGPIXELSY)) * (float) heightInPoints / (float) tm.tmHeight;
+            ascent = (float) tm.tmAscent / (float) tm.tmHeight;
+            std::unordered_map<int, int> glyphsForChars;
+            defaultGlyph = getGlyphForChar (dc, glyphsForChars, tm.tmDefaultChar);
+            createKerningPairs (dc, glyphsForChars, (float) tm.tmHeight);
         }
     }
 
-    void createKerningPairs (HDC hdc, float height)
+    void createKerningPairs (HDC hdc, std::unordered_map<int, int>& glyphsForChars, float height)
     {
         HeapBlock<KERNINGPAIR> rawKerning;
-        auto numKPs = GetKerningPairs (hdc, 0, 0);
+        auto numKPs = GetKerningPairs (hdc, 0, nullptr);
         rawKerning.calloc (numKPs);
         GetKerningPairs (hdc, numKPs, rawKerning);
 
-        kerningPairs.ensureStorageAllocated ((int) numKPs);
+        std::unordered_map<int, int> widthsForGlyphs;
 
         for (DWORD i = 0; i < numKPs; ++i)
         {
-            KerningPair kp;
-            kp.glyph1 = getGlyphForChar (hdc, rawKerning[i].wFirst);
-            kp.glyph2 = getGlyphForChar (hdc, rawKerning[i].wSecond);
+            auto glyph1 = getGlyphForChar (hdc, glyphsForChars, rawKerning[i].wFirst);
+            auto glyph2 = getGlyphForChar (hdc, glyphsForChars, rawKerning[i].wSecond);
+            auto standardWidth = getGlyphWidth (hdc, widthsForGlyphs, glyph1);
 
-            auto standardWidth = getGlyphWidth (hdc, kp.glyph1);
-            kp.kerning = (standardWidth + rawKerning[i].iKernAmount) / height;
-            kerningPairs.add (kp);
-
-            kp.glyph2 = -1;  // add another entry for the standard width version..
-            kp.kerning = standardWidth / height;
-            kerningPairs.add (kp);
+            kerningPairs[kerningPairIndex (glyph1, glyph2)] = (float) (standardWidth + rawKerning[i].iKernAmount) / height;
+            kerningPairs[kerningPairIndex (glyph1, -1)]     = (float) standardWidth / height;
         }
     }
 
-    static int getGlyphForChar (HDC dc, juce_wchar character)
+    static int getGlyphForChar (HDC dc, std::unordered_map<int, int>& cache, juce_wchar character)
     {
+        auto existing = cache.find ((int) character);
+
+        if (existing != cache.end())
+            return existing->second;
+
         const WCHAR charToTest[] = { (WCHAR) character, 0 };
         WORD index = 0;
 
@@ -570,39 +558,45 @@ private:
               || index == 0xffff)
             return -1;
 
+        cache[(int) character] = index;
         return index;
+    }
+
+    static int getGlyphWidth (HDC dc, std::unordered_map<int, int>& cache, int glyphNumber)
+    {
+        auto existing = cache.find (glyphNumber);
+
+        if (existing != cache.end())
+            return existing->second;
+
+        auto width = getGlyphWidth (dc, glyphNumber);
+        cache[glyphNumber] = width;
+        return width;
     }
 
     static int getGlyphWidth (HDC dc, int glyphNumber)
     {
         GLYPHMETRICS gm;
         gm.gmCellIncX = 0;
-        GetGlyphOutline (dc, (UINT) glyphNumber, GGO_NATIVE | GGO_GLYPH_INDEX, &gm, 0, 0, &identityMatrix);
+        GetGlyphOutline (dc, (UINT) glyphNumber, GGO_NATIVE | GGO_GLYPH_INDEX, &gm, 0, nullptr, &identityMatrix);
         return gm.gmCellIncX;
     }
 
     float getKerning (HDC hdc, int glyph1, int glyph2)
     {
-        KerningPair kp;
-        kp.glyph1 = glyph1;
-        kp.glyph2 = glyph2;
-        auto index = kerningPairs.indexOf (kp);
+        auto pair = kerningPairs.find (kerningPairIndex (glyph1, glyph2));
 
-        if (index < 0)
-        {
-            kp.glyph2 = -1;
-            index = kerningPairs.indexOf (kp);
+        if (pair != kerningPairs.end())
+            return pair->second;
 
-            if (index < 0)
-            {
-                kp.glyph2 = -1;
-                kp.kerning = getGlyphWidth (hdc, kp.glyph1) / (float) tm.tmHeight;
-                kerningPairs.add (kp);
-                return kp.kerning;
-            }
-        }
+        auto single = kerningPairs.find (kerningPairIndex (glyph1, -1));
 
-        return kerningPairs.getReference (index).kerning;
+        if (single != kerningPairs.end())
+            return single->second;
+
+        auto width = (float) getGlyphWidth (hdc, glyph1) / (float) tm.tmHeight;
+        kerningPairs[kerningPairIndex (glyph1, -1)] = width;
+        return width;
     }
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (WindowsTypeface)
@@ -619,7 +613,7 @@ Typeface::Ptr Typeface::createSystemTypefaceFor (const Font& font)
     {
         std::unique_ptr<WindowsDirectWriteTypeface> wtf (new WindowsDirectWriteTypeface (font, factories->systemFonts));
 
-        if (wtf->loadedOk())
+        if (wtf->loadedOk() && wtf->isFontFound())
             return wtf.release();
     }
    #endif

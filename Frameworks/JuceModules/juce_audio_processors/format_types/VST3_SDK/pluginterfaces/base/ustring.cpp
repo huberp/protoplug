@@ -9,7 +9,7 @@
 //-----------------------------------------------------------------------------
 // This file is part of a Steinberg SDK. It is subject to the license terms
 // in the LICENSE file found in the top-level directory of this distribution
-// and at www.steinberg.net/sdklicenses.
+// and at www.steinberg.net/sdklicenses. 
 // No part of the SDK, including this file, may be copied, modified, propagated,
 // or distributed except according to the terms contained in the LICENSE file.
 //-----------------------------------------------------------------------------
@@ -17,8 +17,11 @@
 #include "ustring.h"
 
 #if SMTG_OS_WINDOWS
-#include <stdio.h>
-#pragma warning (disable : 4996)
+#include <cstdio>
+
+#ifdef _MSC_VER
+#pragma warning (disable : 4996) // deprecated functions
+#endif
 
 #elif SMTG_OS_MACOS
 #include <CoreFoundation/CoreFoundation.h>
@@ -78,7 +81,7 @@ void StringCopy (TDstChar* dst, int32 dstSize, const TSrcChar* src, int32 srcSiz
 }
 
 //------------------------------------------------------------------------
-/** Find length of null-terminated string. */
+/** Find length of null-terminated string, i.e. StringLength (L"ABC\0") => 3 */
 //------------------------------------------------------------------------
 template <class TSrcChar>
 int32 StringLength (const TSrcChar* src, int32 srcSize = -1)
