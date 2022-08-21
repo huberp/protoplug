@@ -1,4 +1,6 @@
-Some notes on creating the c++ export header, the c ffi import header, and the lua wrapper from JUCE library code. It's a mix of manual labor and notepad++ regular expression replacements, which was probably faster than doing everything manually or making a full parser and code generator. And it starts with the GNU C preprocessor :
+Some notes on creating the c++ export header, the c ffi import header, and the lua wrapper from JUCE library code. 
+It's a mix of manual labor and notepad++ regular expression replacements, which was probably faster than doing everything manually or making a full parser and code generator. 
+And it starts with the GNU C preprocessor :
 
 ========== JUCE header to c++ export header =========
 
