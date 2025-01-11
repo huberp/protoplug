@@ -3401,20 +3401,6 @@ struct ImFontBuilderIO
 {
    _Bool         (*FontBuilder_Build)(ImFontAtlas* atlas);
 };
-struct ImFontAtlas;
-struct ImFontBuilderIO;
-typedef enum {
-    ImGuiFreeTypeBuilderFlags_NoHinting = 1 << 0,
-    ImGuiFreeTypeBuilderFlags_NoAutoHint = 1 << 1,
-    ImGuiFreeTypeBuilderFlags_ForceAutoHint = 1 << 2,
-    ImGuiFreeTypeBuilderFlags_LightHinting = 1 << 3,
-    ImGuiFreeTypeBuilderFlags_MonoHinting = 1 << 4,
-    ImGuiFreeTypeBuilderFlags_Bold = 1 << 5,
-    ImGuiFreeTypeBuilderFlags_Oblique = 1 << 6,
-    ImGuiFreeTypeBuilderFlags_Monochrome = 1 << 7,
-    ImGuiFreeTypeBuilderFlags_LoadColor = 1 << 8,
-    ImGuiFreeTypeBuilderFlags_Bitmap = 1 << 9
-}ImGuiFreeTypeBuilderFlags;
 ImVec2* ImVec2_ImVec2_Nil(void);
 void ImVec2_destroy(ImVec2* self);
 ImVec2* ImVec2_ImVec2_Float(float _x,float _y);
@@ -4847,8 +4833,6 @@ void igImFontAtlasBuildRender8bppRectFromString(ImFontAtlas* atlas,int x,int y,i
 void igImFontAtlasBuildRender32bppRectFromString(ImFontAtlas* atlas,int x,int y,int w,int h,const char* in_str,char in_marker_char,unsigned int in_marker_pixel_value);
 void igImFontAtlasBuildMultiplyCalcLookupTable(unsigned char out_table[256],float in_multiply_factor);
 void igImFontAtlasBuildMultiplyRectAlpha8(const unsigned char table[256],unsigned char* pixels,int x,int y,int w,int h,int stride);
-const ImFontBuilderIO* ImGuiFreeType_GetBuilderForFreeType(void);
-void ImGuiFreeType_SetAllocatorFunctions(void*(*alloc_func)(size_t sz,void* user_data),void(*free_func)(void* ptr,void* user_data),void* user_data);
 void igLogText(const char *fmt, ...);
 void ImGuiTextBuffer_appendf(ImGuiTextBuffer *self, const char *fmt, ...);
 float igGET_FLT_MAX(void);

@@ -4,26 +4,29 @@ typedef void (*GLFWvkproc)(void);
 typedef struct GLFWmonitor GLFWmonitor;
 typedef struct GLFWwindow GLFWwindow;
 typedef struct GLFWcursor GLFWcursor;
-typedef void (* GLFWerrorfun)(int,const char*);
-typedef void (* GLFWwindowposfun)(GLFWwindow*,int,int);
-typedef void (* GLFWwindowsizefun)(GLFWwindow*,int,int);
-typedef void (* GLFWwindowclosefun)(GLFWwindow*);
-typedef void (* GLFWwindowrefreshfun)(GLFWwindow*);
-typedef void (* GLFWwindowfocusfun)(GLFWwindow*,int);
-typedef void (* GLFWwindowiconifyfun)(GLFWwindow*,int);
-typedef void (* GLFWwindowmaximizefun)(GLFWwindow*,int);
-typedef void (* GLFWframebuffersizefun)(GLFWwindow*,int,int);
-typedef void (* GLFWwindowcontentscalefun)(GLFWwindow*,float,float);
-typedef void (* GLFWmousebuttonfun)(GLFWwindow*,int,int,int);
-typedef void (* GLFWcursorposfun)(GLFWwindow*,double,double);
-typedef void (* GLFWcursorenterfun)(GLFWwindow*,int);
-typedef void (* GLFWscrollfun)(GLFWwindow*,double,double);
-typedef void (* GLFWkeyfun)(GLFWwindow*,int,int,int,int);
-typedef void (* GLFWcharfun)(GLFWwindow*,unsigned int);
-typedef void (* GLFWcharmodsfun)(GLFWwindow*,unsigned int,int);
-typedef void (* GLFWdropfun)(GLFWwindow*,int,const char*[]);
-typedef void (* GLFWmonitorfun)(GLFWmonitor*,int);
-typedef void (* GLFWjoystickfun)(int,int);
+typedef void* (* GLFWallocatefun)(size_t size, void* user);
+typedef void* (* GLFWreallocatefun)(void* block, size_t size, void* user);
+typedef void (* GLFWdeallocatefun)(void* block, void* user);
+typedef void (* GLFWerrorfun)(int error_code, const char* description);
+typedef void (* GLFWwindowposfun)(GLFWwindow* window, int xpos, int ypos);
+typedef void (* GLFWwindowsizefun)(GLFWwindow* window, int width, int height);
+typedef void (* GLFWwindowclosefun)(GLFWwindow* window);
+typedef void (* GLFWwindowrefreshfun)(GLFWwindow* window);
+typedef void (* GLFWwindowfocusfun)(GLFWwindow* window, int focused);
+typedef void (* GLFWwindowiconifyfun)(GLFWwindow* window, int iconified);
+typedef void (* GLFWwindowmaximizefun)(GLFWwindow* window, int maximized);
+typedef void (* GLFWframebuffersizefun)(GLFWwindow* window, int width, int height);
+typedef void (* GLFWwindowcontentscalefun)(GLFWwindow* window, float xscale, float yscale);
+typedef void (* GLFWmousebuttonfun)(GLFWwindow* window, int button, int action, int mods);
+typedef void (* GLFWcursorposfun)(GLFWwindow* window, double xpos, double ypos);
+typedef void (* GLFWcursorenterfun)(GLFWwindow* window, int entered);
+typedef void (* GLFWscrollfun)(GLFWwindow* window, double xoffset, double yoffset);
+typedef void (* GLFWkeyfun)(GLFWwindow* window, int key, int scancode, int action, int mods);
+typedef void (* GLFWcharfun)(GLFWwindow* window, unsigned int codepoint);
+typedef void (* GLFWcharmodsfun)(GLFWwindow* window, unsigned int codepoint, int mods);
+typedef void (* GLFWdropfun)(GLFWwindow* window, int path_count, const char* paths[]);
+typedef void (* GLFWmonitorfun)(GLFWmonitor* monitor, int event);
+typedef void (* GLFWjoystickfun)(int jid, int event);
 typedef struct GLFWvidmode
 {
 int width;
@@ -51,13 +54,23 @@ typedef struct GLFWgamepadstate
 unsigned char buttons[15];
 float axes[6];
 } GLFWgamepadstate;
+typedef struct GLFWallocator
+{
+GLFWallocatefun allocate;
+GLFWreallocatefun reallocate;
+GLFWdeallocatefun deallocate;
+void* user;
+} GLFWallocator;
 int glfwInit(void);
 void glfwTerminate(void);
 void glfwInitHint(int hint, int value);
+void glfwInitAllocator(const GLFWallocator* allocator);
 void glfwGetVersion(int* major, int* minor, int* rev);
 const char* glfwGetVersionString(void);
 int glfwGetError(const char** description);
 GLFWerrorfun glfwSetErrorCallback(GLFWerrorfun callback);
+int glfwGetPlatform(void);
+int glfwPlatformSupported(int platform);
 GLFWmonitor** glfwGetMonitors(int* count);
 GLFWmonitor* glfwGetPrimaryMonitor(void);
 void glfwGetMonitorPos(GLFWmonitor* monitor, int* xpos, int* ypos);
@@ -80,6 +93,7 @@ GLFWwindow* glfwCreateWindow(int width, int height, const char* title, GLFWmonit
 void glfwDestroyWindow(GLFWwindow* window);
 int glfwWindowShouldClose(GLFWwindow* window);
 void glfwSetWindowShouldClose(GLFWwindow* window, int value);
+const char* glfwGetWindowTitle(GLFWwindow* window);
 void glfwSetWindowTitle(GLFWwindow* window, const char* title);
 void glfwSetWindowIcon(GLFWwindow* window, int count, const GLFWimage* images);
 void glfwGetWindowPos(GLFWwindow* window, int* xpos, int* ypos);
@@ -181,6 +195,8 @@ local glfwc= {
 	['GLFW_ANGLE_PLATFORM_TYPE_OPENGL'] = 0x00037002,
 	['GLFW_ANGLE_PLATFORM_TYPE_OPENGLES'] = 0x00037003,
 	['GLFW_ANGLE_PLATFORM_TYPE_VULKAN'] = 0x00037007,
+	['GLFW_ANY_PLATFORM'] = 0x00060000,
+	['GLFW_ANY_POSITION'] = 0x80000000,
 	['GLFW_ANY_RELEASE_BEHAVIOR'] = 0,
 	['GLFW_API_UNAVAILABLE'] = 0x00010006,
 	['GLFW_ARROW_CURSOR'] = 0x00036001,
@@ -205,6 +221,7 @@ local glfwc= {
 	['GLFW_CONTEXT_VERSION_MINOR'] = 0x00022003,
 	['GLFW_CROSSHAIR_CURSOR'] = 0x00036003,
 	['GLFW_CURSOR'] = 0x00033001,
+	['GLFW_CURSOR_CAPTURED'] = 0x00034004,
 	['GLFW_CURSOR_DISABLED'] = 0x00034003,
 	['GLFW_CURSOR_HIDDEN'] = 0x00034002,
 	['GLFW_CURSOR_NORMAL'] = 0x00034001,
@@ -443,8 +460,17 @@ local glfwc= {
 	['GLFW_OPENGL_PROFILE'] = 0x00022008,
 	['GLFW_OSMESA_CONTEXT_API'] = 0x00036003,
 	['GLFW_OUT_OF_MEMORY'] = 0x00010005,
+	['GLFW_PLATFORM'] = 0x00050003,
+	['GLFW_PLATFORM_COCOA'] = 0x00060002,
 	['GLFW_PLATFORM_ERROR'] = 0x00010008,
+	['GLFW_PLATFORM_NULL'] = 0x00060005,
+	['GLFW_PLATFORM_UNAVAILABLE'] = 0x0001000E,
+	['GLFW_PLATFORM_WAYLAND'] = 0x00060003,
+	['GLFW_PLATFORM_WIN32'] = 0x00060001,
+	['GLFW_PLATFORM_X11'] = 0x00060004,
 	['GLFW_POINTING_HAND_CURSOR'] = 0x00036004,
+	['GLFW_POSITION_X'] = 0x0002000E,
+	['GLFW_POSITION_Y'] = 0x0002000F,
 	['GLFW_PRESS'] = 1,
 	['GLFW_RAW_MOUSE_MOTION'] = 0x00033005,
 	['GLFW_RED_BITS'] = 0x00021001,
@@ -460,6 +486,7 @@ local glfwc= {
 	['GLFW_RESIZE_NS_CURSOR'] = 0x00036006,
 	['GLFW_RESIZE_NWSE_CURSOR'] = 0x00036007,
 	['GLFW_SAMPLES'] = 0x0002100D,
+	['GLFW_SCALE_FRAMEBUFFER'] = 0x0002200D,
 	['GLFW_SCALE_TO_MONITOR'] = 0x0002200C,
 	['GLFW_SRGB_CAPABLE'] = 0x0002100E,
 	['GLFW_STENCIL_BITS'] = 0x00021006,
@@ -474,9 +501,15 @@ local glfwc= {
 	['GLFW_VERSION_UNAVAILABLE'] = 0x00010007,
 	['GLFW_VISIBLE'] = 0x00020004,
 	['GLFW_VRESIZE_CURSOR'] = 0x00036006,
+	['GLFW_WAYLAND_APP_ID'] = 0x00026001,
+	['GLFW_WAYLAND_DISABLE_LIBDECOR'] = 0x00038002,
+	['GLFW_WAYLAND_LIBDECOR'] = 0x00053001,
+	['GLFW_WAYLAND_PREFER_LIBDECOR'] = 0x00038001,
 	['GLFW_WIN32_KEYBOARD_MENU'] = 0x00025001,
+	['GLFW_WIN32_SHOWDEFAULT'] = 0x00025002,
 	['GLFW_X11_CLASS_NAME'] = 0x00024001,
 	['GLFW_X11_INSTANCE_NAME'] = 0x00024002,
+	['GLFW_X11_XCB_VULKAN_SURFACE'] = 0x00052001,
 }
 
 local ffi = require "ffi"
@@ -488,9 +521,6 @@ setmetatable(glfwc, {__index=function(self, k) error("Unknown GL constant: "..k)
 
 -- Load and export libraries
 local glfw
--- 1. Alternative
---glfw=script.ffiLoad("glfw.so.3","glfw3","")
--- 2. Alternative
 if ffi.os == "Windows" then
 	glfw = ffi.load("glfw3")
 else

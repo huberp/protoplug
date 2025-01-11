@@ -2171,7 +2171,7 @@ function ImPlotTime.ImPlotTime_time_t(s,us)
 end
 function ImPlotTime.__new(ctype,a1,a2) -- generic version
     if a1==nil then return ImPlotTime.ImPlotTime_Nil() end
-    if (ffi.istype('int32_t',a1) or type(a1)=='number') then return ImPlotTime.ImPlotTime_time_t(a1,a2) end
+    if (ffi.istype('int64_t',a1) or type(a1)=='number') then return ImPlotTime.ImPlotTime_time_t(a1,a2) end
     print(ctype,a1,a2)
     error'ImPlotTime.__new could not find overloaded'
 end
@@ -2478,11 +2478,6 @@ function M.imguiGizmo_setSphereColors(a1,a2) -- generic version
 end
 M.imguiGizmo = ffi.metatype("imguiGizmo",imguiGizmo)
 ------------------------------------------------------
-M.ImGuiFreeType_GetBuilderForFreeType = lib.ImGuiFreeType_GetBuilderForFreeType
-function M.ImGuiFreeType_SetAllocatorFunctions(alloc_func,free_func,user_data)
-    user_data = user_data or nil
-    return lib.ImGuiFreeType_SetAllocatorFunctions(alloc_func,free_func,user_data)
-end
 M.ImGuizmo_AllowAxisFlip = lib.ImGuizmo_AllowAxisFlip
 M.ImGuizmo_BeginFrame = lib.ImGuizmo_BeginFrame
 M.ImGuizmo_DecomposeMatrixToComponents = lib.ImGuizmo_DecomposeMatrixToComponents
