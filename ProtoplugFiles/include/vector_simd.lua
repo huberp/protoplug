@@ -10,13 +10,14 @@ ffi.cdef[[
     void square_vector     (const double* input,              double* result, size_t n);
     void compute_abs_ratio (const double* a, const double* b, double* result, size_t n);
     void squared_difference(const double* a, const double* b, double* result, size_t n);
+    void compute_a_plus_bx (double a, double b, const double* x, double* result, size_t n);
     double* compute_rms_windowed(const double* input, size_t n, size_t window);
 
     double* allocate_aligned_memory(size_t n);
     void free_aligned_memory(double* ptr);
 ]]
 
-local simdLib = ffi.load("vector_add")
+local simdLib = ffi.load("vector_simde_avx2")
 
 local M = {}
 
@@ -86,11 +87,22 @@ local function create_aligned_memory(n)
 	return resTableWithGC, simdPegisterPaddedN
 end
 
+--- Adds two vectors element-wise.
+-- @param op1 The first input vector.
+-- @param op2 The second input vector.
+-- @param result The output vector.
+-- @param n The number of elements in the vectors.
+-- @return The result vector and the padded size.
 function M.add_vectors_into(op1, op2, result, n)
     simdLib.add_vectors(op1(), op2(), result(), n)
     return result, n
 end
 
+--- Squares each element in the input vector.
+-- @param input The input vector.
+-- @param result The output vector.
+-- @param n The number of elements in the vectors.
+-- @return The result vector and the padded size.
 function M.square_vector_into(input, result, n)
     simdLib.square_vector(input(), result(), n)
     return result, n
@@ -99,16 +111,30 @@ end
 local _m_add_into = M.add_vectors_into
 local _m_square_into = M.square_vector_into
 
+--- Adds two vectors element-wise and returns the result.
+-- @param op1 The first input vector.
+-- @param op2 The second input vector.
+-- @param n The number of elements in the vectors.
+-- @return The result vector and the padded size.
 function M.add_vectors(op1, op2, n)
     local result, paddedN = create_aligned_memory(n)
     return _m_add_into(op1, op2, result, paddedN)
 end
 
+--- Squares each element in the input vector and returns the result.
+-- @param input The input vector.
+-- @param n The number of elements in the vectors.
+-- @return The result vector and the padded size.
 function M.square_vector(input, n)
     local result, paddedN = create_aligned_memory(n)
     return _m_square_into(input, result, paddedN)
 end
 
+--- Computes the RMS value for each window in the input vector.
+-- @param input The input vector.
+-- @param n The number of elements in the input vector.
+-- @param window The size of each window.
+-- @return A table containing the RMS values for each window.
 function M.compute_rms_windowed(input, n, window)
     local rms_values = simdLib.compute_rms_windowed(input(), n, window)
     local num_windows = math.ceil(n / window)
@@ -119,16 +145,43 @@ function M.compute_rms_windowed(input, n, window)
     return result_table
 end
 
-function M.compute_abs_ratio(a, b, result, n)
-    simdLib.compute_abs_ratio(a, b, result, n)
+--- Computes the ratio of the absolute value of the sum of two vectors to the sum of their absolute values.
+-- @param a The first input vector.
+-- @param b The second input vector.
+-- @param result The output vector.
+-- @param n The number of elements in the vectors.
+-- @return The result vector and the padded size.
+function M.compute_abs_ratio_into(a, b, result, n)
+    simdLib.compute_abs_ratio(a(), b(), result(), n)
     return result, n
 end
 
-function M.squared_difference(a, b, result, n)
-    simdLib.squared_difference(a, b, result, n)
+--- Computes the squared difference of two vectors.
+-- @param a The first input vector.
+-- @param b The second input vector.
+-- @param result The output vector.
+-- @param n The number of elements in the vectors.
+-- @return The result vector and the padded size.
+function M.squared_difference_into(a, b, result, n)
+    simdLib.squared_difference(a(), b(), result(), n)
     return result, n
 end
 
+--- Computes a + b * x for each element in the array x.
+-- @param a The scalar value to be added.
+-- @param b The scalar value to be multiplied with each element of x.
+-- @param x The input array.
+-- @param result The output array.
+-- @param n The number of elements in the input and output arrays.
+-- @return The result array and the padded size.
+function M.compute_a_plus_bx_into(a, b, x, result, n)
+    simdLib.compute_a_plus_bx(a, b, x(), result(), n)
+    return result, n
+end
+
+--- Allocates aligned memory for a vector.
+-- @param n The number of elements in the vector.
+-- @return A table containing the aligned memory pointer and the padded size.
 function M.allocate_aligned_memory(n)
     return create_aligned_memory(n)
 end
